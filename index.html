@@ -2,249 +2,155 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Parabéns Chiquita 🎉</title>
-
+<title>Parabéns Chiquita - Jogo</title>
 <style>
-body { margin:0; overflow:hidden; background:#000; font-family:Arial; }
-canvas { display:block; }
-
+body { margin:0; overflow:hidden; background:#ffe4b5; font-family:Arial;}
+canvas { display:block; margin:0 auto; background:#87ceeb;}
 #startScreen {
- position:fixed; inset:0;
- background:linear-gradient(135deg,#ff758c,#ff7eb3);
- display:flex; flex-direction:column;
- justify-content:center; align-items:center;
- color:white; z-index:10;
+  position:absolute; width:100%; height:100%;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  background:#ffb6c1;
 }
-
-h1 { animation:pulse 1s infinite; }
-
+h1 {
+  font-size:40px;
+  animation: pulse 1s infinite;
+}
 @keyframes pulse {
- 0% { transform:scale(1); }
- 50% { transform:scale(1.1); }
- 100% { transform:scale(1); }
+  0%{transform:scale(1);}
+  50%{transform:scale(1.1);}
+  100%{transform:scale(1);}
 }
-
-#startBtn {
- padding:18px 35px;
- font-size:26px;
- background:white;
- color:#ff4d6d;
- border-radius:12px;
- margin-top:25px;
- cursor:pointer;
-}
-
-#header {
- position:absolute; top:10px; width:100%;
- text-align:center; color:white;
- font-size:22px;
-}
-
-#controls {
- position:fixed; bottom:25px; width:100%;
- display:flex; justify-content:center;
- gap:50px;
-}
-
-.btn {
- width:75px; height:75px;
- background:rgba(255,255,255,0.25);
- border-radius:50%;
- font-size:30px;
- line-height:75px;
- text-align:center;
+button {
+  padding:15px 30px;
+  font-size:20px;
+  cursor:pointer;
 }
 </style>
 </head>
-
 <body>
 
 <div id="startScreen">
-<h1>🎉 PARABÉNS CHIQUITA 🎉</h1>
-<div id="startBtn">PRESS START</div>
+  <h1>PARABÉNS CHIQUITA 🎉</h1>
+  <button onclick="startGame()">PRESS START</button>
 </div>
 
-<div id="header">Colete os pães de queijo 🧀</div>
+<canvas id="gameCanvas" width="400" height="600"></canvas>
 
-<canvas id="gameCanvas"></canvas>
-
-<div id="controls">
-<div class="btn" id="left">⬅️</div>
-<div class="btn" id="right">➡️</div>
-</div>
-
-<audio id="music" loop>
-<source src="musica.mp3" type="audio/mpeg">
-</audio>
+<audio id="music" src="musica.mp3" loop></audio>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-function resize(){
- canvas.width = window.innerWidth;
- canvas.height = window.innerHeight;
-}
-resize();
-window.onresize = resize;
+let player = {x:180,y:500,width:50,height:80,speed:6,img:new Image()};
+player.img.src="foto1.png";
 
-const headImg = new Image();
-const breadImg = new Image();
-headImg.src = "foto1.png";
-breadImg.src = "foto2.png";
+let items=[];
+let score=0;
+let missed=0;
+let maxMissed=5;
+let gameSpeed=3;
+let gameOver=false;
 
-let gameStarted = false;
-let moveLeft = false;
-let moveRight = false;
-let score = 0;
+const itemImg = new Image();
+itemImg.src="foto2.png";
 
-let player = {
- x: canvas.width/2,
- y: canvas.height - 160,
- width: 80,
- height: 120,
- speed: 7
-};
-
-let breads = [];
-let particles = [];
-
-document.getElementById("left").ontouchstart = () => moveLeft = true;
-document.getElementById("left").ontouchend = () => moveLeft = false;
-document.getElementById("right").ontouchstart = () => moveRight = true;
-document.getElementById("right").ontouchend = () => moveRight = false;
-
-document.addEventListener("keydown", e=>{
- if(e.key==="ArrowLeft") moveLeft = true;
- if(e.key==="ArrowRight") moveRight = true;
-});
-document.addEventListener("keyup", e=>{
- if(e.key==="ArrowLeft") moveLeft = false;
- if(e.key==="ArrowRight") moveRight = false;
-});
-
-document.getElementById("startBtn").onclick = () => {
- document.getElementById("startScreen").style.display = "none";
- document.getElementById("music").play().catch(()=>{});
- gameStarted = true;
- setInterval(spawnBread, 700);
-};
-
-let lines = [];
-for(let i=0;i<25;i++){
- lines.push({ y:i*30 });
+function startGame(){
+ document.getElementById("startScreen").style.display="none";
+ document.getElementById("music").play();
+ gameLoop();
 }
 
+function drawPlayer(){
+ ctx.fillStyle="#ff69b4";
+ ctx.fillRect(player.x+10,player.y+30,30,40);
+
+ ctx.save();
+ ctx.beginPath();
+ ctx.arc(player.x+25,player.y+20,20,0,Math.PI*2);
+ ctx.clip();
+ ctx.drawImage(player.img,player.x+5,player.y,40,40);
+ ctx.restore();
+}
+
+function spawnItem(){
+ items.push({x:Math.random()*350,y:-50});
+}
+
+function drawItems(){
+ items.forEach((item,i)=>{
+   item.y+=gameSpeed;
+
+   ctx.drawImage(itemImg,item.x,item.y,40,40);
+
+   // colisão
+   if(item.x < player.x+50 &&
+      item.x+40 > player.x &&
+      item.y < player.y+80 &&
+      item.y+40 > player.y){
+        items.splice(i,1);
+        score++;
+        gameSpeed+=0.2;
+   }
+
+   if(item.y>600){
+     items.splice(i,1);
+     missed++;
+     if(missed>=maxMissed){
+       gameOver=true;
+     }
+   }
+ });
+}
+
+let rainOffset=0;
 function drawBackground(){
- ctx.fillStyle = "#111";
- ctx.fillRect(0,0,canvas.width,canvas.height);
+ ctx.fillStyle="#87ceeb";
+ ctx.fillRect(0,0,400,600);
 
- ctx.strokeStyle = "#fff";
- ctx.lineWidth = 3;
-
- lines.forEach(line=>{
-  line.y += 10;
-  if(line.y > canvas.height) line.y = -20;
-
-  ctx.beginPath();
-  ctx.moveTo(canvas.width/2, line.y);
-  ctx.lineTo(canvas.width/2, line.y+25);
-  ctx.stroke();
- });
-}
-
-function spawnBread(){
- breads.push({
-  x: Math.random()*(canvas.width-40),
-  y: -40,
-  size: 40,
-  speed: 5
- });
-}
-
-function createParticles(x,y){
- for(let i=0;i<6;i++){
-  particles.push({
-   x,y,
-   dx:(Math.random()-0.5)*4,
-   dy:(Math.random()-0.5)*4,
-   life:25
-  });
+ for(let i=0;i<20;i++){
+   ctx.drawImage(itemImg,Math.random()*400,(i*40+rainOffset)%600,30,30);
  }
+ rainOffset+=2;
 }
 
-function update(){
- if(!gameStarted) return;
-
- if(moveLeft && player.x>0) player.x -= player.speed;
- if(moveRight && player.x<canvas.width-player.width) player.x += player.speed;
-
- let speedFactor = 1 + (score * 0.05);
-
- breads.forEach((b,i)=>{
-  b.y += b.speed * speedFactor;
-
-  if(
-   b.x < player.x + player.width &&
-   b.x + b.size > player.x &&
-   b.y < player.y + player.height &&
-   b.y + b.size > player.y
-  ){
-   createParticles(b.x,b.y);
-   breads.splice(i,1);
-   score++;
-  }
-
-  if(b.y > canvas.height) breads.splice(i,1);
- });
-
- particles.forEach((p,i)=>{
-  p.x += p.dx;
-  p.y += p.dy;
-  p.life--;
-  if(p.life <= 0) particles.splice(i,1);
- });
+function drawScore(){
+ ctx.fillStyle="#000";
+ ctx.fillText("Pontos: "+score,10,20);
+ ctx.fillText("Erros: "+missed,10,40);
 }
 
-function draw(){
+function drawGameOver(){
+ ctx.fillStyle="rgba(0,0,0,0.7)";
+ ctx.fillRect(0,0,400,600);
+
+ ctx.fillStyle="#fff";
+ ctx.font="30px Arial";
+ ctx.textAlign="center";
+ ctx.fillText("GAME OVER",200,300);
+}
+
+document.addEventListener("keydown",e=>{
+ if(e.key==="ArrowLeft") player.x-=player.speed;
+ if(e.key==="ArrowRight") player.x+=player.speed;
+});
+
+setInterval(spawnItem,1000);
+
+function gameLoop(){
+ if(gameOver){
+   drawGameOver();
+   return;
+ }
+
  drawBackground();
+ drawPlayer();
+ drawItems();
+ drawScore();
 
- ctx.fillStyle = "#ffb6c1";
- ctx.fillRect(player.x+20, player.y+50, 40, 60);
-
- if(headImg.complete){
-  ctx.drawImage(headImg, player.x+10, player.y, 60, 60);
- }
-
- breads.forEach(b=>{
-  if(breadImg.complete){
-   ctx.drawImage(breadImg, b.x, b.y, b.size, b.size);
-  }
- });
-
- ctx.fillStyle="yellow";
- particles.forEach(p=>{
-  ctx.fillRect(p.x,p.y,4,4);
- });
-
- ctx.fillStyle="white";
- ctx.font="20px Arial";
- ctx.fillText("Pontos: "+score,20,40);
-
- if(score >= 40){
-  ctx.font="30px Arial";
-  ctx.fillText("🎉 PARABÉNS CHIQUITA ❤️", canvas.width/2-180, canvas.height/2);
- }
+ requestAnimationFrame(gameLoop);
 }
-
-function loop(){
- update();
- draw();
- requestAnimationFrame(loop);
-}
-
-loop();
 </script>
 
 </body>
