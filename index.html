@@ -3,154 +3,104 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Parabéns Chiquita</title>
+<title>Feliz Aniversário 🎉</title>
 <style>
-body{margin:0;overflow:hidden;font-family:Arial;background:#ffd1dc}
-#startScreen{
-position:absolute;inset:0;display:flex;flex-direction:column;
-align-items:center;justify-content:center;background:#ffb6c1;z-index:10}
-h1{font-size:42px;animation:pulse 1s infinite}
-@keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
-button{padding:15px 30px;font-size:20px;cursor:pointer;border:none;border-radius:10px}
-canvas{display:block;margin:0 auto;background:#87ceeb}
+body{margin:0;overflow:hidden;background:#000;font-family:Arial}
+canvas{display:block}
+#start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#222;color:#fff;z-index:10}
+#btn{padding:16px 28px;background:#fff;color:#ff4d6d;border-radius:10px;font-size:22px;margin-top:16px}
+#header{position:absolute;top:10px;width:100%;text-align:center;color:#fff;font-size:20px}
+#controls{position:fixed;bottom:20px;width:100%;display:flex;justify-content:center;gap:40px}
+.ctrl{width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.25);text-align:center;line-height:70px;font-size:28px}
 </style>
 </head>
 <body>
 
-<div id="startScreen">
-<h1>PARABÉNS CHIQUITA 🎉</h1>
-<button onclick="startGame()">PRESS START</button>
+<div id="start">
+  <h1>🎉 FELIZ ANIVERSÁRIO CHIQUITA 🎉</h1>
+  <div id="btn">▶ PRESS START</div>
 </div>
 
-<canvas id="gameCanvas" width="400" height="600"></canvas>
-<audio id="music" src="musica.mp3" loop></audio>
+<div id="header">Colete os pães de queijo 🧀</div>
+
+<canvas id="c"></canvas>
+
+<div id="controls">
+  <div class="ctrl" id="l">⬅️</div>
+  <div class="ctrl" id="r">➡️</div>
+</div>
+
+<audio id="music" loop>
+  <source src="musica.mp3" type="audio/mpeg">
+</audio>
 
 <script>
-const canvas=document.getElementById("gameCanvas");
-const ctx=canvas.getContext("2d");
+const c=document.getElementById("c"),ctx=c.getContext("2d");
+function rs(){c.width=innerWidth;c.height=innerHeight}
+rs(); onresize=rs;
 
-let player={x:175,y:480,width:50,height:80,speed:6,img:new Image()};
-player.img.src="foto1.png";
+const head=new Image(); head.src="foto1.jpg";
+const bread=new Image(); bread.src="foto2.jpg";
 
-let itemImg=new Image();
-itemImg.src="foto2.png";
+let start=false, ml=false, mr=false, score=0;
 
-let items=[],score=0,missed=0,maxMissed=5,gameSpeed=3,gameOver=false;
-let rain=[];
+const p={x:c.width/2,y:c.height-140,w:80,h:110,s:7};
+let items=[];
 
-function initRain(){
- for(let i=0;i<20;i++){
-   rain.push({x:Math.random()*400,y:Math.random()*600});
- }
+l.ontouchstart=()=>ml=true; l.ontouchend=()=>ml=false;
+r.ontouchstart=()=>mr=true; r.ontouchend=()=>mr=false;
+onkeydown=e=>{if(e.key==="ArrowLeft")ml=true; if(e.key==="ArrowRight")mr=true;}
+onkeyup=e=>{if(e.key==="ArrowLeft")ml=false; if(e.key==="ArrowRight")mr=false;}
+
+btn.onclick=()=>{
+  start=true;
+  document.getElementById("start").style.display="none";
+  document.getElementById("music").play().catch(()=>{});
+  setInterval(()=>items.push({x:Math.random()*(c.width-40),y:-40,s:40,v:4}),700);
+};
+
+let lines=Array.from({length:25},(_,i)=>i*30);
+function bg(){
+  ctx.fillStyle="#111"; ctx.fillRect(0,0,c.width,c.height);
+  ctx.strokeStyle="#fff"; ctx.lineWidth=3;
+  for(let i=0;i<lines.length;i++){
+    lines[i]+=10; if(lines[i]>c.height) lines[i]=-20;
+    ctx.beginPath(); ctx.moveTo(c.width/2,lines[i]); ctx.lineTo(c.width/2,lines[i]+25); ctx.stroke();
+  }
 }
 
-function startGame(){
- document.getElementById("startScreen").style.display="none";
- document.getElementById("music").play();
- initRain();
- gameLoop();
+function upd(){
+  if(!start) return;
+  if(ml && p.x>0) p.x-=p.s;
+  if(mr && p.x<c.width-p.w) p.x+=p.s;
+
+  for(let i=items.length-1;i>=0;i--){
+    let it=items[i]; it.y+=it.v;
+    if(it.x<p.x+p.w && it.x+it.s>p.x && it.y<p.y+p.h && it.y+it.s>p.y){
+      items.splice(i,1); score++; continue;
+    }
+    if(it.y>c.height) items.splice(i,1);
+  }
 }
 
-function drawPlayer(){
- ctx.fillStyle="#ff69b4";
- ctx.fillRect(player.x+10,player.y+30,30,40);
+function draw(){
+  bg();
 
- ctx.save();
- ctx.beginPath();
- ctx.arc(player.x+25,player.y+20,20,0,Math.PI*2);
- ctx.clip();
- ctx.drawImage(player.img,player.x+5,player.y,40,40);
- ctx.restore();
+  ctx.fillStyle="#ffb6c1";
+  ctx.fillRect(p.x+20,p.y+40,40,60);
+
+  if(head.complete) ctx.drawImage(head,p.x+10,p.y,60,60);
+
+  for(const it of items){
+    if(bread.complete) ctx.drawImage(bread,it.x,it.y,it.s,it.s);
+    else { ctx.fillStyle="yellow"; ctx.fillRect(it.x,it.y,it.s,it.s); }
+  }
+
+  ctx.fillStyle="#fff"; ctx.font="20px Arial";
+  ctx.fillText("Pontos: "+score,20,40);
 }
 
-function spawnItem(){
- items.push({x:Math.random()*(canvas.width-40),y:-40});
-}
-
-function drawItems(){
- for(let i=items.length-1;i>=0;i--){
-   let it=items[i];
-   it.y+=gameSpeed;
-
-   ctx.drawImage(itemImg,it.x,it.y,40,40);
-
-   if(it.x<player.x+50 && it.x+40>player.x && it.y<player.y+80 && it.y+40>player.y){
-     items.splice(i,1);
-     score++;
-     gameSpeed+=0.15;
-     continue;
-   }
-
-   if(it.y>canvas.height){
-     items.splice(i,1);
-     missed++;
-     if(missed>=maxMissed) gameOver=true;
-   }
- }
-}
-
-function drawBackground(){
- ctx.fillStyle="#87ceeb";
- ctx.fillRect(0,0,canvas.width,canvas.height);
-
- rain.forEach(r=>{
-   r.y+=2;
-   if(r.y>600) r.y=-30;
-   ctx.drawImage(itemImg,r.x,r.y,25,25);
- });
-}
-
-function drawHUD(){
- ctx.fillStyle="#000";
- ctx.font="16px Arial";
- ctx.fillText("Pontos: "+score,10,20);
- ctx.fillText("Erros: "+missed,10,40);
-}
-
-function drawGameOver(){
- ctx.fillStyle="rgba(0,0,0,0.7)";
- ctx.fillRect(0,0,400,600);
-
- ctx.fillStyle="#fff";
- ctx.font="30px Arial";
- ctx.textAlign="center";
- ctx.fillText("GAME OVER",200,280);
-
- ctx.font="16px Arial";
- ctx.fillText("Pressione R para reiniciar",200,320);
-}
-
-function resetGame(){
- items=[];score=0;missed=0;gameSpeed=3;gameOver=false;
-}
-
-document.addEventListener("keydown",e=>{
- if(e.key==="ArrowLeft") player.x-=player.speed;
- if(e.key==="ArrowRight") player.x+=player.speed;
-
- // limites
- if(player.x<0) player.x=0;
- if(player.x>350) player.x=350;
-
- if(e.key==="r" && gameOver) resetGame();
-});
-
-setInterval(spawnItem,900);
-
-function gameLoop(){
- if(gameOver){
-   drawGameOver();
-   requestAnimationFrame(gameLoop);
-   return;
- }
-
- drawBackground();
- drawPlayer();
- drawItems();
- drawHUD();
-
- requestAnimationFrame(gameLoop);
-}
+(function loop(){ upd(); draw(); requestAnimationFrame(loop); })();
 </script>
 
 </body>
