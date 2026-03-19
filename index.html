@@ -176,7 +176,7 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0;}
   <div id="start-content">
     <div class="top-emoji">🎂🎉🎈</div>
     <div id="start-title">PARABÉNS<br>CHIQUITA!</div>
-    <div id="start-sub">🧀 COLETA OS PÃES DE QUEIJO 🧀</div>
+    <div id="start-sub">🍕 COLETA SUAS COMIDAS PREFERIDAS 🍔</div>
     <div id="clap-wrap">
       <button id="btn-clap" title="Toque a música!">👏</button>
       <div id="clap-label">🎵 TOQUE A MÚSICA 🎵</div>
@@ -319,54 +319,80 @@ const itemImgs = ITEM_SRCS.map(src=>{
   // Load the bg images as Image objects for drawing in circles
   const imgs=BG_SRCS.map(src=>{ const i=new Image(); i.src=src; i.ok=false; i.onload=()=>i.ok=true; return i; });
 
-  // Create bubbles: small circles with photos inside, falling gently
-  const bubbles=Array.from({length:18},(_,i)=>({
-    x: Math.random()*window.innerWidth,
-    y: -60 - Math.random()*window.innerHeight,
-    r: 22 + Math.random()*28,          // radius 22–50px (not too big)
-    v: 0.6 + Math.random()*1.1,        // slow fall
-    vx:(Math.random()-.5)*0.5,         // gentle sway
-    rot: Math.random()*Math.PI*2,
-    drot:(Math.random()-.5)*0.012,
+  // Bubbles: larger, fluid sine-wave motion, breathing scale
+  const bubbles=Array.from({length:20},(_,i)=>({
+    x:  Math.random()*window.innerWidth,
+    y:  -80 - Math.random()*window.innerHeight,
+    r:  42 + Math.random()*46,          // radius 42–88px — noticeably bigger
+    vy: 0.45 + Math.random()*0.7,       // slower, smoother fall
+    // sine-wave horizontal sway
+    swayAmp:  18 + Math.random()*28,    // pixels of lateral swing
+    swayFreq: 0.004 + Math.random()*0.006,
+    swayOff:  Math.random()*Math.PI*2,
+    // breathing scale
+    scaleAmp: 0.04 + Math.random()*0.04,
+    scaleFreq:0.008 + Math.random()*0.008,
+    scaleOff: Math.random()*Math.PI*2,
+    // base x (for sway)
+    baseX: Math.random()*window.innerWidth,
+    t: Math.random()*1000,              // time offset so they're all out of phase
     imgIdx: i % imgs.length,
-    a: 0.55 + Math.random()*.35,       // opacity
-    border:['#ff6b9d','#ffe066','#c44dff','#4dffd2','#ff7043'][i%5]
+    a: 0.68 + Math.random()*.28,
+    border:['#ff6b9d','#ffe066','#c44dff','#4dffd2','#ff7043','#60a5fa'][i%6]
   }));
 
   function drawBubbles(){
     bx.clearRect(0,0,bc.width,bc.height);
     bubbles.forEach(b=>{
-      b.y += b.v; b.x += b.vx; b.rot += b.drot;
-      // wrap around
-      if(b.y > bc.height + b.r+10){ b.y = -b.r-10; b.x=Math.random()*bc.width; }
-      if(b.x < -b.r-20) b.x=bc.width+b.r;
-      if(b.x > bc.width+b.r+20) b.x=-b.r;
+      b.t++;
+      b.y += b.vy;
+      // smooth sine sway around baseX
+      b.x = b.baseX + Math.sin(b.t * b.swayFreq + b.swayOff) * b.swayAmp;
+      // breathing scale
+      const scale = 1 + Math.sin(b.t * b.scaleFreq + b.scaleOff) * b.scaleAmp;
 
-      const img=imgs[b.imgIdx];
-      bx.save();
-      bx.globalAlpha=b.a;
-      bx.translate(b.x, b.y);
-      bx.rotate(b.rot);
-
-      // Clip to circle and draw photo
-      bx.beginPath(); bx.arc(0,0,b.r,0,Math.PI*2); bx.clip();
-      if(img.ok){
-        // Draw image centered and cropped to circle
-        const s=b.r*2;
-        bx.drawImage(img,-b.r,-b.r,s,s);
-      } else {
-        bx.fillStyle='#3b0764'; bx.fill();
+      // wrap
+      if(b.y > bc.height + b.r + 10){
+        b.y = -b.r - 10;
+        b.baseX = Math.random() * bc.width;
+        b.x = b.baseX;
       }
 
-      // Border ring
-      bx.restore();
+      const img = imgs[b.imgIdx];
+      const r   = b.r * scale;
+
       bx.save();
-      bx.globalAlpha=b.a;
+      bx.globalAlpha = b.a;
       bx.translate(b.x, b.y);
-      bx.strokeStyle=b.border;
-      bx.lineWidth=3;
-      bx.shadowColor=b.border; bx.shadowBlur=8;
-      bx.beginPath(); bx.arc(0,0,b.r,0,Math.PI*2); bx.stroke();
+      bx.scale(scale, scale);
+
+      // Photo clipped to circle
+      bx.save();
+      bx.beginPath(); bx.arc(0, 0, b.r, 0, Math.PI*2); bx.clip();
+      if(img.ok){
+        bx.drawImage(img, -b.r, -b.r, b.r*2, b.r*2);
+      } else {
+        bx.fillStyle='#3b0764';
+        bx.beginPath(); bx.arc(0,0,b.r,0,Math.PI*2); bx.fill();
+      }
+      bx.restore();
+
+      // Glowing border
+      bx.strokeStyle = b.border;
+      bx.lineWidth   = 4;
+      bx.shadowColor = b.border;
+      bx.shadowBlur  = 16;
+      bx.beginPath(); bx.arc(0, 0, b.r, 0, Math.PI*2); bx.stroke();
+      bx.shadowBlur  = 0;
+
+      // Soft glass shine (top-left highlight)
+      const shine = bx.createRadialGradient(-b.r*.3, -b.r*.35, b.r*.05, -b.r*.15, -b.r*.2, b.r*.7);
+      shine.addColorStop(0,  'rgba(255,255,255,0.32)');
+      shine.addColorStop(0.5,'rgba(255,255,255,0.06)');
+      shine.addColorStop(1,  'rgba(255,255,255,0)');
+      bx.fillStyle = shine;
+      bx.beginPath(); bx.arc(0, 0, b.r, 0, Math.PI*2); bx.fill();
+
       bx.restore();
     });
     if(gameState===ST.START) requestAnimationFrame(drawBubbles);
