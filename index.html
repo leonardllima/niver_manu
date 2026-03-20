@@ -117,6 +117,17 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0;}
 
 .over-emoji{font-size:clamp(3.5rem,11vw,6rem);
   animation:sadRock 1.3s ease-in-out infinite alternate;}
+/* bubble pop entrance animation */
+@keyframes bubblePop{
+  0%  {transform:scale(0) rotate(-10deg);opacity:0;}
+  60% {transform:scale(1.12) rotate(4deg);opacity:1;}
+  80% {transform:scale(0.95) rotate(-2deg);}
+  100%{transform:scale(1) rotate(0deg);opacity:1;}
+}
+
+/* overlay fx canvases fill their screen */
+#go-fx-canvas, #lvl-conf-canvas{width:100%;height:100%;}
+
 @keyframes sadRock{from{transform:rotate(-8deg)}to{transform:rotate(8deg)}}
 .over-title{font-family:'Fredoka One',cursive;font-size:clamp(2.2rem,8vw,4.5rem);
   color:var(--pink);text-shadow:0 0 35px var(--pink);text-align:center;}
@@ -225,23 +236,36 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0;}
 
 <!-- ═══ GAME OVER ═══ -->
 <div id="screen-gameover" class="screen hidden">
-  <div class="over-emoji">😢</div>
-  <div class="over-title">GAME OVER!</div>
-  <!-- bg3 photo bubble rendered here via JS -->
-  <canvas id="go-bubble-canvas" width="140" height="140"
-    style="border-radius:50%;box-shadow:0 0 30px #ff6b9d;animation:bubblePop .6s cubic-bezier(.34,1.56,.64,1) both;"></canvas>
-  <div class="over-info" id="go-score-txt">Você coletou 0 itens!</div>
-  <button class="btn-retry" id="btn-retry-go">🔁 TENTE NOVAMENTE</button>
-  <div class="over-hint">ou pressione R</div>
+  <!-- animated crying emojis background -->
+  <canvas id="go-fx-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:0;"></canvas>
+  <!-- content -->
+  <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px;text-align:center;">
+    <!-- photo bubble on top -->
+    <canvas id="go-bubble-canvas" width="150" height="150"
+      style="border-radius:50%;display:block;margin:0 auto;
+             box-shadow:0 0 0 5px #ff6b9d88, 0 0 30px #ff6b9daa;
+             animation:bubblePop .7s cubic-bezier(.34,1.56,.64,1) both;"></canvas>
+    <div class="over-title">GAME OVER!</div>
+    <div class="over-info" id="go-score-txt">Você coletou 0 itens!</div>
+    <button class="btn-retry" id="btn-retry-go">🔁 TENTE NOVAMENTE</button>
+    <div class="over-hint">ou pressione R</div>
+  </div>
 </div>
 
 <!-- ═══ LEVEL UP ═══ -->
 <div id="screen-levelup" class="screen hidden">
-  <div style="font-size:clamp(2.5rem,9vw,5rem);animation:winPop 1s ease-in-out infinite alternate">🎉</div>
-  <div class="lvlup-title">NÍVEL <span id="lvlup-num">2</span>!</div>
-  <canvas id="lvlup-bubble-canvas" width="130" height="130"
-    style="border-radius:50%;box-shadow:0 0 30px #4dffd2;animation:bubblePop .6s cubic-bezier(.34,1.56,.64,1) both;"></canvas>
-  <div class="lvlup-sub" id="lvlup-desc">Ficou mais rápido!</div>
+  <!-- confetti canvas for level-up -->
+  <canvas id="lvl-conf-canvas" style="position:absolute;inset:0;pointer-events:none;z-index:0;"></canvas>
+  <!-- content -->
+  <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:12px;padding:24px;text-align:center;">
+    <!-- photo bubble on top -->
+    <canvas id="lvlup-bubble-canvas" width="150" height="150"
+      style="border-radius:50%;display:block;margin:0 auto;
+             box-shadow:0 0 0 5px #4dffd288, 0 0 30px #4dffd2aa;
+             animation:bubblePop .7s cubic-bezier(.34,1.56,.64,1) both;"></canvas>
+    <div class="lvlup-title">NÍVEL <span id="lvlup-num">2</span>!</div>
+    <div class="lvlup-sub" id="lvlup-desc">Ficou mais rápido!</div>
+  </div>
 </div>
 
 <!-- ═══ WIN ═══ -->
@@ -331,11 +355,14 @@ window.addEventListener('resize',()=>{ resize(); initRoad(); initRain(); });
 /* ══════════════════════════════════════════
    ASSETS
 ══════════════════════════════════════════ */
-const avatarImg = new Image(); avatarImg.src='avatar.png';
+const avatarImg = new Image(); avatarImg.src='avancou.png';
 let avatarOK=false; avatarImg.onload=()=>avatarOK=true;
+// Also try jpg fallback
+avatarImg.onerror=()=>{ avatarImg.src='avancou.jpg'; };
 
-const bg3Img = new Image(); bg3Img.src='bg3.jpg';
+const bg3Img = new Image(); bg3Img.src='gameover.png';
 let bg3OK=false; bg3Img.onload=()=>bg3OK=true;
+bg3Img.onerror=()=>{ bg3Img.src='gameover.jpg'; };
 
 const itemImgs = ITEM_SRCS.map(src=>{
   const img=new Image(); img.src=src; img.ok=false;
@@ -485,18 +512,19 @@ function drawBubblePhoto(canvasEl, img, borderColor){
   x.beginPath(); x.arc(r,r,r-3,0,Math.PI*2); x.fill();
 }
 
-// Animate the bubble photo (gentle pulse)
+// Animate the bubble photo — polls until image is loaded, then pulses
 function animateBubbleCanvas(canvasEl, img, borderColor){
-  let t=0;
+  canvasEl._stopAnim = false;
+  let t = 0;
   function frame(){
+    if(canvasEl._stopAnim) return;
     t++;
-    const scale=1+Math.sin(t*0.06)*0.04;
-    canvasEl.style.transform=`scale(${scale})`;
-    // only redraw every 2 frames for performance
-    if(t%2===0) drawBubblePhoto(canvasEl,img,borderColor);
-    if(!canvasEl._stopAnim) requestAnimationFrame(frame);
+    // Draw as soon as image is available (or fallback colour)
+    drawBubblePhoto(canvasEl, img, borderColor);
+    const scale = 1 + Math.sin(t * 0.07) * 0.05;
+    canvasEl.style.transform = `scale(${scale})`;
+    requestAnimationFrame(frame);
   }
-  canvasEl._stopAnim=false;
   frame();
 }
 function stopBubbleAnim(canvasEl){ canvasEl._stopAnim=true; canvasEl.style.transform=''; }
@@ -1077,10 +1105,11 @@ let lvlBubbleAnim=null;
 let goBubbleAnim=null;
 
 function startGame(){
-  // stop any running bubble anims
+  // stop any running bubble anims and fx overlays
   const goBc=document.getElementById('go-bubble-canvas');
   const lvBc=document.getElementById('lvlup-bubble-canvas');
   goBc._stopAnim=true; lvBc._stopAnim=true;
+  stopGoFx(); stopLvlConf();
   stopWinScreen();
 
   score=0; lives=MAX_LIVES; level=1; prevLevel=1;
@@ -1098,17 +1127,99 @@ function startGame(){
   playGame();
 }
 
+/* ── Crying emoji FX for game over ── */
+let goFxAnimId = null;
+function startGoFx(){
+  const fc = document.getElementById('go-fx-canvas');
+  fc.width = window.innerWidth; fc.height = window.innerHeight;
+  const fx = fc.getContext('2d');
+  const EMOJIS = ['😢','😭','😢','😿','💧','😢','😭'];
+  const drops = Array.from({length:22}, () => ({
+    x: Math.random() * fc.width,
+    y: -40 - Math.random() * fc.height * .6,
+    vy: 1.2 + Math.random() * 1.8,
+    vx: (Math.random() - .5) * 0.6,
+    size: 24 + Math.random() * 28,
+    rot: (Math.random() - .5) * 0.4,
+    drot: (Math.random() - .5) * 0.025,
+    emoji: EMOJIS[Math.floor(Math.random() * EMOJIS.length)],
+    a: 0.55 + Math.random() * 0.35
+  }));
+  if(goFxAnimId) cancelAnimationFrame(goFxAnimId);
+  function draw(){
+    fx.clearRect(0,0,fc.width,fc.height);
+    drops.forEach(d => {
+      d.y += d.vy; d.x += d.vx; d.rot += d.drot;
+      if(d.y > fc.height + 40){ d.y = -40; d.x = Math.random() * fc.width; }
+      fx.save();
+      fx.globalAlpha = d.a;
+      fx.translate(d.x, d.y);
+      fx.rotate(d.rot);
+      fx.font = d.size + 'px serif';
+      fx.textAlign = 'center';
+      fx.textBaseline = 'middle';
+      fx.fillText(d.emoji, 0, 0);
+      fx.restore();
+    });
+    if(gameState === ST.GAMEOVER) goFxAnimId = requestAnimationFrame(draw);
+  }
+  draw();
+}
+function stopGoFx(){
+  if(goFxAnimId) cancelAnimationFrame(goFxAnimId);
+  goFxAnimId = null;
+}
+
+/* ── Mini confetti FX for level-up ── */
+let lvlConfAnimId = null;
+function startLvlConf(){
+  const cc = document.getElementById('lvl-conf-canvas');
+  cc.width = window.innerWidth; cc.height = window.innerHeight;
+  const cx = cc.getContext('2d');
+  const COLS = ['#ff6b9d','#ffe066','#4dffd2','#c44dff','#ff7043','#60a5fa','#fff'];
+  const pieces = Array.from({length:70}, () => ({
+    x: Math.random() * cc.width,
+    y: -20 - Math.random() * cc.height * .5,
+    vx: (Math.random() - .5) * 3.5,
+    vy: 1.8 + Math.random() * 3,
+    w: 7 + Math.random() * 9, h: 5 + Math.random() * 6,
+    rot: Math.random() * 360, drot: (Math.random() - .5) * 9,
+    color: COLS[Math.floor(Math.random() * COLS.length)]
+  }));
+  if(lvlConfAnimId) cancelAnimationFrame(lvlConfAnimId);
+  function draw(){
+    cx.clearRect(0,0,cc.width,cc.height);
+    pieces.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.rot += p.drot;
+      if(p.y > cc.height + 20){ p.y = -20; p.x = Math.random() * cc.width; }
+      cx.save();
+      cx.translate(p.x, p.y); cx.rotate(p.rot * Math.PI/180);
+      cx.fillStyle = p.color;
+      cx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      cx.restore();
+    });
+    if(gameState === ST.LEVELUP) lvlConfAnimId = requestAnimationFrame(draw);
+  }
+  draw();
+}
+function stopLvlConf(){
+  if(lvlConfAnimId) cancelAnimationFrame(lvlConfAnimId);
+  lvlConfAnimId = null;
+}
+
 function triggerGameOver(){
   running=false; gameState=ST.GAMEOVER; stopAll();
   document.getElementById('go-score-txt').textContent=
     `Você coletou ${score} item${score!==1?'s':''}!`;
   document.getElementById('hud').style.display='none';
   document.getElementById('controls').style.display='none';
-  // Draw bg3 photo bubble
+  showScreen('screen-gameover');
+  // start crying FX overlay
+  startGoFx();
+  // draw gameover photo bubble
   const goBc=document.getElementById('go-bubble-canvas');
   goBc._stopAnim=false;
   animateBubbleCanvas(goBc, bg3Img, '#ff6b9d');
-  showScreen('screen-gameover');
 }
 
 function triggerLevelUp(){
@@ -1116,14 +1227,18 @@ function triggerLevelUp(){
   flashLvl();
   document.getElementById('lvlup-num').textContent=level;
   document.getElementById('lvlup-desc').textContent=LV_DESC[level-1]||'Mais rápido!';
-  // Draw avatar bubble
+  showScreen('screen-levelup');
+  // start confetti FX overlay
+  startLvlConf();
+  // draw avancou photo bubble
   const lvBc=document.getElementById('lvlup-bubble-canvas');
   lvBc._stopAnim=false;
   animateBubbleCanvas(lvBc, avatarImg, '#4dffd2');
-  showScreen('screen-levelup');
   // Auto-resume after 2.5s
   setTimeout(()=>{
     if(gameState!==ST.LEVELUP) return;
+    stopLvlConf();
+    stopBubbleAnim(document.getElementById('lvlup-bubble-canvas'));
     hideAll();
     running=true; gameState=ST.PLAYING;
     loop();
