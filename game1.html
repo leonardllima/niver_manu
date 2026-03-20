@@ -110,8 +110,6 @@ canvas{display:block;position:fixed;top:0;left:0;}
 .win-title{font-family:'Fredoka One',cursive;font-size:clamp(2.5rem,9vw,5.5rem);color:var(--yellow);text-shadow:0 0 45px var(--yellow),0 0 90px #ffb347;text-align:center;animation:winPop 1.6s ease-in-out infinite alternate;}
 @keyframes winPop{from{transform:scale(1)}to{transform:scale(1.07)}}
 .win-emoji{font-size:clamp(2rem,7vw,4rem);animation:floaty 1.8s ease-in-out infinite alternate;}
-#btn-prize{display:inline-block;padding:18px 48px;font-family:'Fredoka One',cursive;font-size:clamp(1.2rem,4vw,1.8rem);color:#1a0535;background:linear-gradient(135deg,#ffe066,#ffb347,#ff6b9d);background-size:200% 200%;border:none;border-radius:50px;cursor:pointer;letter-spacing:2px;text-decoration:none;box-shadow:0 0 30px #ffe06688,0 6px 0 #b8860b;animation:prizePulse 1.4s ease-in-out infinite alternate;}
-@keyframes prizePulse{from{box-shadow:0 0 20px #ffe06688,0 6px 0 #b8860b;transform:scale(1);}to{box-shadow:0 0 55px #ffe066cc,0 6px 0 #8b6500;transform:scale(1.06);}}
 
 /* ── FLASHES ── */
 #flash,#err-flash,#lvl-flash{position:fixed;inset:0;pointer-events:none;z-index:15;opacity:0;}
@@ -209,7 +207,6 @@ canvas{display:block;position:fixed;top:0;left:0;}
     <div style="font-family:'Bubblegum Sans',cursive;font-size:clamp(1rem,3.5vw,1.5rem);color:var(--yellow);letter-spacing:2px;animation:fadePulse 2.5s ease-in-out infinite;">🍕 VOCÊ É INCRÍVEL! 💕</div>
     <div style="font-family:'Bubblegum Sans',cursive;font-size:clamp(.9rem,3vw,1.2rem);color:#e9d5ff;line-height:1.7;">Coletou todas as comidas preferidas<br>e completou o jogo! 🌟</div>
     <button class="btn-retry" id="btn-retry-win">🎮 JOGAR DE NOVO</button>
-    <a id="btn-prize" href="https://wa.me/5563984167994?text=Quero%20resgatar%20meu%20pr%C3%AAmio" target="_blank" rel="noopener">🎁 RESGATAR PRÊMIO</a>
   </div>
 </div>
 

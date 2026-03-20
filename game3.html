@@ -760,10 +760,136 @@ function update(){
     const obs=obstacles[i];
     obs.x -= gameSpeed;
     if(hitObs(obs)){
-      triggerGameOver(); return;
+      startCrash(); return;
     }
     if(obs.x < -obs.w*2) obstacles.splice(i,1);
   }
+}
+
+/* ═══════════════════════════════════════════
+   CRASH ANIMATION STATE
+═══════════════════════════════════════════ */
+let crashing     = false;   // true while crash animation plays
+let crashTick    = 0;       // frames since crash started
+const CRASH_DUR  = 55;      // frames total for crash animation (~900ms)
+let crashAngle   = 0;       // current rotation of bike+rider
+let crashVY      = -6;      // upward bounce on crash
+let crashVX      = -2;      // slight backward drift
+let crashX       = 0;       // crash position X
+let crashY       = 0;       // crash position Y
+
+function startCrash(){
+  if(crashing) return;
+  crashing  = true;
+  crashTick = 0;
+  crashAngle= 0;
+  crashVY   = -6;
+  crashVX   = -2;
+  crashX    = PLAYER_X + PLAYER_W / 2;
+  crashY    = playerY  + PLAYER_H / 2;
+  gameRunning = false;
+  flashEl('err-flash-g3');
+  document.getElementById('game-music').pause();
+}
+
+function updateCrash(){
+  crashTick++;
+  crashVY   += GRAVITY * 1.1;
+  crashX    += crashVX;
+  crashY    += crashVY;
+  crashAngle -= 0.14;          // spin clockwise (negative = counter-clockwise visually)
+
+  // land on ground
+  const groundCentre = GROUND - PLAYER_H / 2;
+  if(crashY > groundCentre){
+    crashY    = groundCentre;
+    crashVY   = 0;
+    crashVX   = 0;
+    crashAngle= Math.max(crashAngle, -Math.PI * 0.55); // stop tilting
+  }
+
+  if(crashTick >= CRASH_DUR){
+    crashing = false;
+    triggerGameOver();
+  }
+}
+
+function drawCrash(){
+  const hw = PLAYER_W / 2;
+  const hh = PLAYER_H / 2;
+  X.save();
+  X.translate(crashX, crashY);
+  X.rotate(crashAngle);
+  // Draw bike+player at crash position using same function but offset to centre
+  const savedPX = PLAYER_X, savedPY = playerY;
+  // Draw centred on origin
+  X.translate(-hw, -hh);
+  // re-use drawBikeAndPlayer but with temporary overrides not possible cleanly,
+  // so draw a simplified crash sprite: tilted bike silhouette + stars
+  drawCrashSprite(hw * 2, hh * 2);
+  X.restore();
+
+  // Stars / impact sparks
+  const progress = crashTick / CRASH_DUR;
+  if(progress < 0.5){
+    const STAR_COLS=['#ffe066','#f97316','#fbbf24','#fff'];
+    for(let i=0;i<6;i++){
+      const ang = i * Math.PI/3 + crashTick * 0.3;
+      const dist= 18 + crashTick * 1.8;
+      const sx  = crashX + Math.cos(ang)*dist;
+      const sy  = crashY + Math.sin(ang)*dist - 20;
+      X.globalAlpha = 1 - progress * 2;
+      X.fillStyle   = STAR_COLS[i%STAR_COLS.length];
+      // draw ★ shape
+      X.font = '16px serif'; X.textAlign='center'; X.textBaseline='middle';
+      X.fillText('✨', sx, sy);
+    }
+    X.globalAlpha = 1;
+  }
+}
+
+function drawCrashSprite(w, h){
+  // Simplified combined bike+rider sprite used only during crash
+  const cx = w/2, cy = h/2;
+
+  // Bike wheels (distorted/flat)
+  X.strokeStyle='#1c1917'; X.lineWidth=Math.max(3, w*.08);
+  X.beginPath(); X.ellipse(cx-w*.32, cy+h*.38, w*.22, w*.12, 0, 0, Math.PI*2); X.stroke();
+  X.beginPath(); X.ellipse(cx+w*.28, cy+h*.38, w*.22, w*.12, 0, 0, Math.PI*2); X.stroke();
+
+  // Bike frame (bent)
+  X.strokeStyle='#dc2626'; X.lineWidth=Math.max(3, w*.055); X.lineCap='round';
+  X.beginPath();
+  X.moveTo(cx-w*.32, cy+h*.35);
+  X.lineTo(cx,       cy+h*.10);
+  X.lineTo(cx+w*.28, cy+h*.35);
+  X.stroke();
+  X.beginPath();
+  X.moveTo(cx, cy+h*.10);
+  X.lineTo(cx-w*.08, cy-h*.05);
+  X.stroke();
+
+  // Rider body (fallen — horizontal)
+  const dg=X.createLinearGradient(cx-w*.45,cy-h*.25,cx+w*.45,cy);
+  dg.addColorStop(0,'#f9a8d4'); dg.addColorStop(1,'#db2777');
+  X.fillStyle=dg;
+  X.beginPath(); X.ellipse(cx-w*.05, cy-h*.12, w*.42, h*.20, -0.3, 0, Math.PI*2); X.fill();
+
+  // Head
+  const hr = Math.min(w, h) * 0.19;
+  X.fillStyle='#fde68a'; X.beginPath(); X.arc(cx+w*.30, cy-h*.22, hr, 0, Math.PI*2); X.fill();
+  if(avancouImg.ok){
+    X.save(); X.beginPath(); X.arc(cx+w*.30, cy-h*.22, hr, 0, Math.PI*2); X.clip();
+    X.drawImage(avancouImg, cx+w*.30-hr, cy-h*.22-hr, hr*2, hr*2); X.restore();
+  }
+  // Helmet
+  X.fillStyle='#f97316';
+  X.beginPath(); X.arc(cx+w*.30, cy-h*.22-hr*.8, hr*1.08, Math.PI, Math.PI*2); X.fill();
+
+  // Stars on head (dizzy)
+  const dizzy=['⭐','✨'];
+  X.font=(hr*0.8)+'px serif'; X.textAlign='center';
+  X.fillText(dizzy[Math.floor(crashTick/8)%2], cx+w*.30, cy-h*.48);
 }
 
 /* ═══════════════════════════════════════════
@@ -773,16 +899,20 @@ let rafId = null;
 function loop(){
   X.clearRect(0,0,C.width,C.height);
   drawBg();
-  // draw food behind player
   foods.forEach(drawFood);
-  // draw obstacles
   obstacles.forEach(drawObs);
-  // draw player on bike
-  drawBikeAndPlayer();
-  // fx overlay
-  drawFX();
-  // logic
-  update();
+
+  if(crashing){
+    // During crash: draw normal scene but use crash sprite for player
+    drawFX();
+    drawCrash();
+    updateCrash();
+  } else {
+    drawBikeAndPlayer();
+    drawFX();
+    update();
+  }
+
   rafId = requestAnimationFrame(loop);
 }
 
@@ -879,6 +1009,7 @@ function startGame(){
   score=0; frameN=0; gameSpeed=4;
   foods=[]; obstacles=[]; parts=[]; popups=[];
   foodTimer=0; obsTimer=0;
+  crashing=false; crashTick=0;
   playerY  = playerGroundY();
   playerVY = 0; onGround = true; jumpPressed = false;
   initBgObjects();
