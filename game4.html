@@ -227,12 +227,56 @@ canvas{display:block;position:fixed;top:0;left:0;}
 @media(max-width:360px){
   #card-grid{gap:4px;}
 }
+
+/* ── PORTRAIT ORIENTATION WARNING ── */
+#portrait-warning{
+  display:none;
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(2,15,20,.93);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;padding:32px;text-align:center;
+  pointer-events:none;
+}
+#portrait-warning.show{display:flex;}
+#pw-icon{
+  font-size:clamp(3.5rem,14vw,5.5rem);
+  animation:rotateHint 1.8s ease-in-out infinite;
+}
+@keyframes rotateHint{
+  0%  {transform:rotate(0deg)   scale(1);}
+  40% {transform:rotate(90deg)  scale(1.12);}
+  60% {transform:rotate(90deg)  scale(1.12);}
+  100%{transform:rotate(0deg)   scale(1);}
+}
+#pw-title{
+  font-family:'Fredoka One',cursive;
+  font-size:clamp(1.6rem,6vw,2.6rem);
+  color:#22d3ee;
+  text-shadow:0 0 24px #22d3ee;
+  line-height:1.2;
+}
+#pw-sub{
+  font-family:'Bubblegum Sans',cursive;
+  font-size:clamp(.95rem,3.5vw,1.3rem);
+  color:#a5f3fc;
+  line-height:1.6;
+  max-width:300px;
+}
 </style>
 </head>
 <body>
 
 <!-- background canvas (stars + animated glow, no interaction) -->
 <canvas id="gc"></canvas>
+
+<!-- ═══ PORTRAIT WARNING (mobile/tablet only) ═══ -->
+<div id="portrait-warning">
+  <div id="pw-icon">📱↩️</div>
+  <div id="pw-title">Gire o dispositivo!</div>
+  <div id="pw-sub">Para melhor experiência,<br>jogue em modo <strong>horizontal</strong> 🍽️</div>
+</div>
 
 <!-- ═══ START SCREEN — same structure as all others ═══ -->
 <div id="screen-start" class="screen">
@@ -830,6 +874,28 @@ document.getElementById('btn-next' ).addEventListener('click', nextPhase);
 document.getElementById('btn-retry').addEventListener('click', retryPhase);
 document.getElementById('btn-again').addEventListener('click', playAgain);
 document.getElementById('btn-restart-pause').addEventListener('click',()=>{ paused=false; document.getElementById('btn-pause').textContent='⏸'; retryPhase(); });
+/* ══════════════════════════════════════════
+   PORTRAIT ORIENTATION DETECTION
+   — mobile/tablet only, non-blocking
+══════════════════════════════════════════ */
+(function(){
+  const overlay = document.getElementById('portrait-warning');
+
+  function isMobileOrTablet(){
+    return /Mobi|Android|iPhone|iPad|iPod|Touch/i.test(navigator.userAgent)
+      || (navigator.maxTouchPoints > 1 && window.innerWidth < 1200);
+  }
+
+  function checkOrientation(){
+    if(!isMobileOrTablet()){ overlay.classList.remove('show'); return; }
+    const isPortrait = window.innerHeight > window.innerWidth;
+    overlay.classList.toggle('show', isPortrait);
+  }
+
+  window.addEventListener('resize',            checkOrientation, {passive:true});
+  window.addEventListener('orientationchange', checkOrientation, {passive:true});
+  checkOrientation();
+})();
 </script>
 </body>
 </html>

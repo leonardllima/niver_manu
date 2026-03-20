@@ -183,12 +183,56 @@ canvas{display:block;position:fixed;top:0;left:0;}
   #start-title{font-size:clamp(2rem,10vw,3.5rem);}
   #btn-start{padding:14px 28px;font-size:1rem;}
 }
+
+/* ── PORTRAIT ORIENTATION WARNING ── */
+#portrait-warning{
+  display:none;
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(4,28,4,.93);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  flex-direction:column;align-items:center;justify-content:center;
+  gap:20px;padding:32px;text-align:center;
+  pointer-events:none;
+}
+#portrait-warning.show{display:flex;}
+#pw-icon{
+  font-size:clamp(3.5rem,14vw,5.5rem);
+  animation:rotateHint 1.8s ease-in-out infinite;
+}
+@keyframes rotateHint{
+  0%  {transform:rotate(0deg)   scale(1);}
+  40% {transform:rotate(90deg)  scale(1.12);}
+  60% {transform:rotate(90deg)  scale(1.12);}
+  100%{transform:rotate(0deg)   scale(1);}
+}
+#pw-title{
+  font-family:'Fredoka One',cursive;
+  font-size:clamp(1.6rem,6vw,2.6rem);
+  color:#4dffd2;
+  text-shadow:0 0 24px #4dffd2;
+  line-height:1.2;
+}
+#pw-sub{
+  font-family:'Bubblegum Sans',cursive;
+  font-size:clamp(.95rem,3.5vw,1.3rem);
+  color:#a7f3d0;
+  line-height:1.6;
+  max-width:300px;
+}
 </style>
 </head>
 <body>
 
 <canvas id="game-canvas"></canvas>
 <canvas id="confetti-canvas-g2" style="display:none;"></canvas>
+
+<!-- ═══ PORTRAIT WARNING (mobile/tablet only) ═══ -->
+<div id="portrait-warning">
+  <div id="pw-icon">📱↩️</div>
+  <div id="pw-title">Gire o dispositivo!</div>
+  <div id="pw-sub">Para melhor experiência,<br>jogue em modo <strong>horizontal</strong> 🌿</div>
+</div>
 
 <!-- ═══ START SCREEN — identical structure to game1, green palette ═══ -->
 <div id="screen-start" class="screen">
@@ -1232,6 +1276,30 @@ document.getElementById('btn-pause-restart').addEventListener('click',()=>{ paus
    BOOT
 ══════════════════════════════════════════ */
 loop();
+/* ══════════════════════════════════════════
+   PORTRAIT ORIENTATION DETECTION
+   — mobile/tablet only, non-blocking
+══════════════════════════════════════════ */
+(function(){
+  const overlay = document.getElementById('portrait-warning');
+
+  function isMobileOrTablet(){
+    // True if the device is likely a phone or tablet
+    return /Mobi|Android|iPhone|iPad|iPod|Touch/i.test(navigator.userAgent)
+      || (navigator.maxTouchPoints > 1 && window.innerWidth < 1200);
+  }
+
+  function checkOrientation(){
+    if(!isMobileOrTablet()){ overlay.classList.remove('show'); return; }
+    // Portrait = height > width
+    const isPortrait = window.innerHeight > window.innerWidth;
+    overlay.classList.toggle('show', isPortrait);
+  }
+
+  window.addEventListener('resize',            checkOrientation, {passive:true});
+  window.addEventListener('orientationchange', checkOrientation, {passive:true});
+  checkOrientation(); // run on load
+})();
 </script>
 </body>
 </html>
