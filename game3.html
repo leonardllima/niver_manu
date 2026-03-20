@@ -20,7 +20,7 @@ canvas{display:block;position:fixed;top:0;left:0;}
 #confetti-c{z-index:19;pointer-events:none;display:none;}
 
 /* SCREENS */
-.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .screen.hidden{display:none;}
 
 /* START — identical structure to game1, orange palette */
@@ -31,7 +31,7 @@ canvas{display:block;position:fixed;top:0;left:0;}
 #start-overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(155deg,rgba(26,10,2,.88)0%,rgba(90,30,5,.82)55%,rgba(249,115,22,.18)100%);}
 #star-canvas{position:absolute;inset:0;z-index:1;pointer-events:none;}
 #bubble-canvas{position:absolute;inset:0;z-index:2;pointer-events:none;}
-#start-content{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px;text-align:center;}
+#start-content{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:10px;padding:clamp(12px,4vh,28px) 20px;text-align:center;min-height:min-content;}
 
 .top-emoji{font-size:clamp(2rem,7vw,3.8rem);animation:floaty 2s ease-in-out infinite alternate;}
 @keyframes floaty{from{transform:translateY(0)}to{transform:translateY(-14px)}}
@@ -74,7 +74,7 @@ canvas{display:block;position:fixed;top:0;left:0;}
 #jump-hint.hidden{opacity:0;}
 
 /* PAUSE OVERLAY */
-#screen-pause{position:fixed;inset:0;z-index:25;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(20,6,0,.92);backdrop-filter:blur(14px);}
+#screen-pause{position:fixed;inset:0;z-index:25;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(20,6,0,.92);backdrop-filter:blur(14px);overflow-y:auto;-webkit-overflow-scrolling:touch;padding:20px;}
 #screen-pause.show{display:flex;}
 
 /* GAME OVER */
@@ -83,7 +83,7 @@ canvas{display:block;position:fixed;top:0;left:0;}
 .bubble-slot canvas{position:absolute;top:0;left:0;border-radius:50%;}
 .over-title{font-family:'Fredoka One',cursive;font-size:clamp(2.2rem,8vw,4.5rem);color:var(--pink);text-shadow:0 0 35px var(--pink);text-align:center;margin-bottom:4px;}
 .over-sub  {font-family:'Bubblegum Sans',cursive;font-size:clamp(1rem,3.5vw,1.4rem);color:var(--yellow);text-align:center;margin-bottom:14px;}
-.screen-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:20px;text-align:center;width:100%;}
+.screen-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding:clamp(14px,4vh,28px) 20px;text-align:center;width:100%;gap:clamp(8px,2vh,12px);}
 
 /* BUTTONS */
 .btn{padding:15px 44px;font-family:'Fredoka One',cursive;font-size:clamp(1.1rem,3.5vw,1.5rem);color:#fff;border:none;border-radius:50px;cursor:pointer;letter-spacing:1px;box-shadow:0 5px 0 rgba(0,0,0,.4);transition:transform .1s;}
@@ -96,6 +96,21 @@ canvas{display:block;position:fixed;top:0;left:0;}
 #flash-g3,#err-flash-g3{position:fixed;inset:0;pointer-events:none;z-index:15;opacity:0;}
 #flash-g3    {background:rgba(254,215,170,.22);transition:opacity .07s;}
 #err-flash-g3{background:rgba(255,40,40,.3);  transition:opacity .1s;}
+
+/* ── RESPONSIVE: landscape mobile + small screens ── */
+@media(max-height:500px){
+  #start-content{gap:6px;padding:8px 16px;}
+  .top-emoji{font-size:1.6rem;}
+  #start-title{font-size:clamp(1.8rem,8vw,3rem);}
+  #start-sub{font-size:clamp(.8rem,2.5vw,1rem);}
+  #clap-wrap{gap:3px;margin-top:0;}
+  #btn-clap{font-size:clamp(1.8rem,6vw,2.8rem);}
+  #btn-start{padding:12px 36px;font-size:clamp(1rem,3.5vw,1.5rem);}
+}
+@media(max-width:360px){
+  #start-title{font-size:clamp(2rem,10vw,3.5rem);}
+  #btn-start{padding:14px 28px;font-size:1rem;}
+}
 </style>
 </head>
 <body>

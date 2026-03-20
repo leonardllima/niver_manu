@@ -23,7 +23,7 @@ canvas{display:block;position:fixed;top:0;left:0;}
 #gc{z-index:0;pointer-events:none;}   /* background only */
 
 /* ── SCREENS ── */
-.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .screen.hidden{display:none;}
 
 /* ── START — identical structure, cyan palette ── */
@@ -34,7 +34,7 @@ canvas{display:block;position:fixed;top:0;left:0;}
 #start-overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(155deg,rgba(2,15,20,.88)0%,rgba(5,60,80,.82)55%,rgba(34,211,238,.18)100%);}
 #star-canvas{position:absolute;inset:0;z-index:1;pointer-events:none;}
 #bubble-canvas{position:absolute;inset:0;z-index:2;pointer-events:none;}
-#start-content{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px;text-align:center;}
+#start-content{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;gap:10px;padding:clamp(12px,4vh,28px) 20px;text-align:center;min-height:min-content;}
 .top-emoji{font-size:clamp(2rem,7vw,3.8rem);animation:floaty 2s ease-in-out infinite alternate;}
 @keyframes floaty{from{transform:translateY(0)}to{transform:translateY(-14px)}}
 #start-title{font-family:'Fredoka One',cursive;font-size:clamp(2.8rem,9.5vw,6rem);line-height:1.05;color:#fff;text-shadow:0 0 24px var(--pk),0 0 60px var(--pu),0 5px 0 #164e63;animation:titlePop 2.4s ease-in-out infinite alternate;}
@@ -69,8 +69,9 @@ canvas{display:block;position:fixed;top:0;left:0;}
 /* ── GAME AREA ── */
 #game-area{
   position:fixed;inset:0;z-index:20;
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  padding:60px 12px 16px;
+  display:none;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:clamp(54px,10vh,70px) clamp(8px,2vw,16px) clamp(12px,2vh,20px);
+  overflow-y:auto;-webkit-overflow-scrolling:touch;
 }
 /* Picnic tablecloth background for game area */
 #game-area::before{
@@ -84,8 +85,9 @@ canvas{display:block;position:fixed;top:0;left:0;}
 /* ── CARD GRID ── */
 #card-grid{
   position:relative;z-index:1;
-  display:grid;gap:clamp(6px,1.5vw,12px);
-  width:100%;max-width:680px;
+  display:grid;gap:clamp(5px,1.2vw,12px);
+  width:100%;max-width:min(680px,calc(100vw - 24px));
+  margin:auto;
 }
 /* columns set per phase via JS */
 
@@ -166,6 +168,7 @@ canvas{display:block;position:fixed;top:0;left:0;}
 /* ── OVERLAY SCREENS ── */
 #screen-phwin,#screen-over,#screen-pause,#screen-clear{
   background:rgba(2,15,20,.93);backdrop-filter:blur(14px);z-index:50;gap:12px;
+  overflow-y:auto;-webkit-overflow-scrolling:touch;padding:clamp(16px,4vh,28px) 20px;
 }
 .bubble-slot{width:160px;height:160px;position:relative;flex-shrink:0;}
 .bubble-slot canvas{position:absolute;top:0;left:0;border-radius:50%;}
@@ -200,6 +203,30 @@ canvas{display:block;position:fixed;top:0;left:0;}
 
 /* phase intro overlay */
 #screen-intro{background:rgba(2,15,20,.93);backdrop-filter:blur(14px);z-index:50;gap:12px;}
+
+/* ── RESPONSIVE: landscape mobile + small screens ── */
+@media(max-height:500px){
+  #start-content{gap:6px;padding:8px 16px;}
+  .top-emoji{font-size:1.6rem;}
+  #start-title{font-size:clamp(1.8rem,8vw,3rem);}
+  #start-sub{font-size:clamp(.8rem,2.5vw,1rem);}
+  #clap-wrap{gap:3px;margin-top:0;}
+  #btn-clap{font-size:clamp(1.8rem,6vw,2.8rem);}
+  #btn-start{padding:12px 36px;font-size:clamp(1rem,3.5vw,1.5rem);}
+}
+@media(max-width:360px){
+  #start-title{font-size:clamp(2rem,10vw,3.5rem);}
+  #btn-start{padding:14px 28px;font-size:1rem;}
+}
+
+@media(max-height:500px){
+  #game-area{padding:50px 8px 10px;}
+  #card-grid{gap:4px;}
+  .card-mem{max-height:18vw;}
+}
+@media(max-width:360px){
+  #card-grid{gap:4px;}
+}
 </style>
 </head>
 <body>
@@ -729,6 +756,7 @@ function startPhase(){
   updateTimerDisplay();
   playing = true;
   paused  = false;
+  document.getElementById('menu-music').pause();
   document.getElementById('game-music').play().catch(()=>{});
   startTimer();
 }
@@ -773,7 +801,8 @@ function nextPhase(){
     document.getElementById('screen-clear').classList.remove('hidden');
     startConfetti();
     initClearScreen();
-    menuMus.currentTime=0; menuMus.play().catch(()=>{});
+    document.getElementById('game-music').pause();
+  menuMus.currentTime=0; menuMus.play().catch(()=>{});
     return;
   }
   showIntro();
