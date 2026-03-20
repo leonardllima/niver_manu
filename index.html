@@ -27,6 +27,10 @@ canvas{display:block;position:fixed;top:0;left:0;pointer-events:none;}
 .card-1:hover,.card-1:focus{box-shadow:0 0 50px #c44dffaa;border-color:#c44dff99;transform:translateY(-3px);}
 .card-2{background:linear-gradient(135deg,rgba(2,44,30,.92),rgba(10,80,40,.92));border-color:#4dffd244;box-shadow:0 0 26px #4dffd244;}
 .card-2:hover,.card-2:focus{box-shadow:0 0 50px #4dffd2aa;border-color:#4dffd299;transform:translateY(-3px);}
+.card-3{background:linear-gradient(135deg,rgba(60,20,2,.92),rgba(120,50,5,.92));border-color:#f97316aa;box-shadow:0 0 26px #f9731644;}
+.card-3:hover,.card-3:focus{box-shadow:0 0 50px #f97316aa;border-color:#f9731699;transform:translateY(-3px);}
+.card-3 .card-emoji{animation-delay:1s;}
+.card-3 .card-tag{background:rgba(249,115,22,.22);color:#fed7aa;border:1px solid #f9731644;}
 .card-emoji{font-size:clamp(2rem,6.5vw,3.2rem);animation:floaty 1.8s ease-in-out infinite alternate;}
 .card-2 .card-emoji{animation-delay:.5s;}
 .card-title{font-family:'Fredoka One',cursive;font-size:clamp(1rem,3.2vw,1.45rem);color:#fff;text-align:center;line-height:1.2;}
@@ -58,14 +62,20 @@ canvas{display:block;position:fixed;top:0;left:0;pointer-events:none;}
       <a class="card card-1" href="game1.html">
         <div class="card-emoji">🍕</div>
         <div class="card-title">Colete suas<br>Comidas!</div>
-        <div class="card-desc">Dirija pela pista e colete todas as comidas favoritas da Manu antes do tempo acabar!</div>
+        <div class="card-desc">Dirija pela pista e colete todas as comidas favoritas da Manu!</div>
         <div class="card-tag">⬅ ➡ Enduro • 8 níveis</div>
       </a>
       <a class="card card-2" href="game2.html">
         <div class="card-emoji">🧺</div>
         <div class="card-title">Piquenique<br>da Manu!</div>
-        <div class="card-desc">Mire, arremesse as comidas e acerte a cesta de piquenique em 8 fases cheias de desafio!</div>
+        <div class="card-desc">Mire, arremesse as comidas e acerte a cesta de piquenique!</div>
         <div class="card-tag">🎯 Arremesso • 8 fases</div>
+      </a>
+      <a class="card card-3" href="game3.html">
+        <div class="card-emoji">🚴‍♀️</div>
+        <div class="card-title">Rolê da<br>Chiquita!</div>
+        <div class="card-desc">Pedale, colete comidas e desvie dos obstáculos nesse rolê infinito!</div>
+        <div class="card-tag">⬆ Pulo • Endless runner</div>
       </a>
     </div>
     <div id="clap-row">
