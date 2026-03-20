@@ -317,7 +317,7 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0;}
 const WIN_SCORE = 88;   // total items to win (11 levels × ~8 each)
 const MAX_LIVES = 3;
 const BG_SRCS   = ['bg1.jpg','bg2.jpg','bg3.jpg','bg4.jpg','bg5.jpg'];
-const ITEM_SRCS = ['item1.png','item2.png','item3.png','item4.png','item5.png','item6.png'];
+// item images loaded via loadImg in ASSETS section below
 
 // Level thresholds — score needed to reach each level (1–11)
 const LV_THRESH = [0, 8, 16, 24, 32, 42, 52, 62, 70, 76, 82];
@@ -355,19 +355,24 @@ window.addEventListener('resize',()=>{ resize(); initRoad(); initRain(); });
 /* ══════════════════════════════════════════
    ASSETS
 ══════════════════════════════════════════ */
-const avatarImg = new Image(); avatarImg.src='avancou.png';
-let avatarOK=false; avatarImg.onload=()=>avatarOK=true;
-// Also try jpg fallback
-avatarImg.onerror=()=>{ avatarImg.src='avancou.jpg'; };
+/* ══════════════════════════════════════════
+   ASSETS — load images, track readiness via .ok flag
+══════════════════════════════════════════ */
+function loadImg(src, fallback){
+  const img = new Image();
+  img.ok = false;
+  img.onload  = () => { img.ok = true; };
+  img.onerror = () => { if(fallback && img.src.indexOf(fallback)<0){ img.src=fallback; } };
+  img.src = src;
+  return img;
+}
 
-const bg3Img = new Image(); bg3Img.src='gameover.png';
-let bg3OK=false; bg3Img.onload=()=>bg3OK=true;
-bg3Img.onerror=()=>{ bg3Img.src='gameover.jpg'; };
+// avancou.png is actually a JPEG — browsers accept it fine
+const avatarImg = loadImg('avancou.png', 'avancou.jpg');
+const bg3Img    = loadImg('gameover.jpg', 'gameover.png');
 
-const itemImgs = ITEM_SRCS.map(src=>{
-  const img=new Image(); img.src=src; img.ok=false;
-  img.onload=()=>img.ok=true; return img;
-});
+const itemImgs = ['item1.png','item2.png','item3.png','item4.png','item5.png','item6.png']
+  .map(src => loadImg(src));
 
 /* ══════════════════════════════════════════
    BG SLIDESHOW
@@ -486,48 +491,74 @@ const itemImgs = ITEM_SRCS.map(src=>{
 /* ══════════════════════════════════════════
    BUBBLE PHOTO HELPER (gameover & levelup)
 ══════════════════════════════════════════ */
+// Draw bubble photo once — always draws (fallback if image not yet loaded)
 function drawBubblePhoto(canvasEl, img, borderColor){
-  const c=canvasEl, x=c.getContext('2d');
-  const r=c.width/2;
-  x.clearRect(0,0,c.width,c.height);
-  // photo
+  const c = canvasEl;
+  const x = c.getContext('2d');
+  const r = c.width / 2;
+  x.clearRect(0, 0, c.width, c.height);
+
+  // Photo (or vivid fallback)
   x.save();
-  x.beginPath(); x.arc(r,r,r-3,0,Math.PI*2); x.clip();
-  if(img && img.ok) x.drawImage(img,0,0,c.width,c.height);
-  else{ x.fillStyle='#2d0f5e'; x.fillRect(0,0,c.width,c.height); }
+  x.beginPath(); x.arc(r, r, r-4, 0, Math.PI*2); x.clip();
+  if(img && img.ok){
+    x.drawImage(img, 0, 0, c.width, c.height);
+  } else {
+    // Gradient fallback so something visible appears immediately
+    const fg = x.createRadialGradient(r, r, 0, r, r, r);
+    fg.addColorStop(0, '#5b21b6');
+    fg.addColorStop(1, '#1e0842');
+    x.fillStyle = fg; x.fill();
+    x.fillStyle = '#c4b5fd';
+    x.font = 'bold ' + (r * 0.8) + 'px serif';
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText('🌟', r, r);
+  }
   x.restore();
-  // border
-  x.strokeStyle=borderColor||'#ff6b9d';
-  x.lineWidth=5;
-  x.shadowColor=borderColor||'#ff6b9d';
-  x.shadowBlur=20;
-  x.beginPath(); x.arc(r,r,r-3,0,Math.PI*2); x.stroke();
-  x.shadowBlur=0;
-  // shine
-  const shine=x.createRadialGradient(r*.55,r*.45,2,r*.65,r*.5,r*.8);
-  shine.addColorStop(0,'rgba(255,255,255,0.35)');
-  shine.addColorStop(0.5,'rgba(255,255,255,0.07)');
-  shine.addColorStop(1,'rgba(255,255,255,0)');
-  x.fillStyle=shine;
-  x.beginPath(); x.arc(r,r,r-3,0,Math.PI*2); x.fill();
+
+  // Glowing border
+  x.strokeStyle = borderColor || '#ff6b9d';
+  x.lineWidth   = 5;
+  x.shadowColor = borderColor || '#ff6b9d';
+  x.shadowBlur  = 24;
+  x.beginPath(); x.arc(r, r, r-4, 0, Math.PI*2); x.stroke();
+  x.shadowBlur  = 0;
+
+  // Glass shine
+  const shine = x.createRadialGradient(r*.45, r*.35, r*.02, r*.5, r*.4, r*.75);
+  shine.addColorStop(0,   'rgba(255,255,255,0.40)');
+  shine.addColorStop(0.5, 'rgba(255,255,255,0.08)');
+  shine.addColorStop(1,   'rgba(255,255,255,0)');
+  x.fillStyle = shine;
+  x.beginPath(); x.arc(r, r, r-4, 0, Math.PI*2); x.fill();
 }
 
-// Animate the bubble photo — polls until image is loaded, then pulses
+// Animate bubble — redraw every frame so image appears as soon as it loads
 function animateBubbleCanvas(canvasEl, img, borderColor){
   canvasEl._stopAnim = false;
+
+  // Reset CSS pop animation so it replays fresh each time
+  canvasEl.style.animation = 'none';
+  canvasEl.style.transform = 'scale(0)';
+  // Force reflow then re-enable animation
+  void canvasEl.offsetWidth;
+  canvasEl.style.animation = '';
+
   let t = 0;
   function frame(){
     if(canvasEl._stopAnim) return;
     t++;
-    // Draw as soon as image is available (or fallback colour)
     drawBubblePhoto(canvasEl, img, borderColor);
-    const scale = 1 + Math.sin(t * 0.07) * 0.05;
-    canvasEl.style.transform = `scale(${scale})`;
+    // gentle pulse after pop animation finishes (~700ms = ~42 frames)
+    if(t > 42){
+      const scale = 1 + Math.sin(t * 0.07) * 0.04;
+      canvasEl.style.transform = `scale(${scale})`;
+    }
     requestAnimationFrame(frame);
   }
   frame();
 }
-function stopBubbleAnim(canvasEl){ canvasEl._stopAnim=true; canvasEl.style.transform=''; }
+function stopBubbleAnim(canvasEl){ canvasEl._stopAnim = true; canvasEl.style.transform = ''; }
 
 /* ══════════════════════════════════════════
    AUDIO
@@ -882,7 +913,7 @@ function drawPlayer(){
   ctx.beginPath(); ctx.arc(hx,hy,hr,0,Math.PI*2); ctx.fill();
 
   // Avatar face
-  if(avatarOK){
+  if(avatarImg.ok){
     ctx.save();
     ctx.beginPath(); ctx.arc(hx,hy,hr,0,Math.PI*2); ctx.clip();
     ctx.drawImage(avatarImg,hx-hr,hy-hr,hr*2,hr*2);
