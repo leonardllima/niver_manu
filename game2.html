@@ -6,45 +6,124 @@
 <title>🧺 Piquenique da Manu!</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Bubblegum+Sans&family=Nunito:wght@700;900&display=swap');
-:root{--pink:#ff6b9d;--purple:#c44dff;--yellow:#ffe066;--mint:#4dffd2;--green:#22c55e;--bg:#0a1a08;}
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{width:100%;height:100%;overflow:hidden;font-family:'Nunito',sans-serif;background:var(--bg);touch-action:none;user-select:none;}
-canvas{display:block;position:fixed;top:0;left:0;z-index:0;}
 
-/* ── UI OVERLAY ── */
-#hud{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:8px 16px;background:linear-gradient(180deg,rgba(0,0,0,.7)0%,transparent 100%);z-index:10;pointer-events:none;}
-#hud-phase{font-family:'Fredoka One',cursive;font-size:clamp(1rem,3.5vw,1.5rem);color:#fff;text-shadow:0 0 10px var(--yellow);}
-#hud-hits{font-family:'Fredoka One',cursive;font-size:clamp(1rem,3.5vw,1.5rem);color:var(--mint);}
-#hud-tries{font-size:clamp(.9rem,3vw,1.3rem);letter-spacing:2px;}
-#hud-wind{font-family:'Bubblegum Sans',cursive;font-size:clamp(.8rem,2.5vw,1.1rem);color:#fde68a;position:fixed;top:46px;right:16px;z-index:10;pointer-events:none;}
+/* ── PALETTE ── */
+:root{
+  --pk:#ff6b9d; --gr:#22c55e; --yl:#ffe066; --mn:#4dffd2;
+  --sky1:#7ed6f5; --sky2:#c8eefb; --grass1:#4ade80; --grass2:#15803d;
+  --brown:#92400e; --dbrown:#78350f;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{
+  width:100%;height:100%;overflow:hidden;
+  font-family:'Nunito',sans-serif;
+  background:#1a4a12;
+  touch-action:none;user-select:none;
+}
+canvas{display:block;position:fixed;top:0;left:0;z-index:0;}
+#gc{z-index:0;}
+
+/* ── HUD ── */
+#hud{
+  position:fixed;top:0;left:0;right:0;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:6px 14px;
+  background:linear-gradient(180deg,rgba(0,0,0,.65)0%,transparent 100%);
+  z-index:10;pointer-events:none;
+}
+#hud-phase{font-family:'Fredoka One',cursive;font-size:clamp(.9rem,3vw,1.3rem);color:#fff;text-shadow:0 0 8px var(--yl);}
+#hud-hits{font-family:'Fredoka One',cursive;font-size:clamp(.9rem,3vw,1.3rem);color:var(--mn);}
+#hud-tries{font-size:clamp(.8rem,2.5vw,1.1rem);}
+#hud-wind{font-family:'Bubblegum Sans',cursive;font-size:clamp(.75rem,2vw,.95rem);color:#fde68a;position:fixed;top:38px;right:60px;z-index:10;pointer-events:none;}
+
+/* ── PAUSE BUTTON ── */
+#btn-pause{
+  position:fixed;top:8px;right:14px;z-index:30;
+  font-family:'Fredoka One',cursive;font-size:.9rem;color:#fff;
+  background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);
+  border-radius:18px;padding:5px 13px;cursor:pointer;
+  backdrop-filter:blur(4px);
+}
+#btn-back{
+  position:fixed;top:8px;left:14px;z-index:30;
+  font-family:'Fredoka One',cursive;font-size:.9rem;color:#fff;
+  background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);
+  border-radius:18px;padding:5px 13px;cursor:pointer;
+  backdrop-filter:blur(4px);
+}
+
+/* ── DRAG HINT ── */
+#drag-hint{
+  position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+  font-family:'Bubblegum Sans',cursive;font-size:clamp(.8rem,2.2vw,1rem);
+  color:rgba(255,255,255,.8);background:rgba(0,0,0,.45);
+  padding:6px 18px;border-radius:28px;z-index:10;pointer-events:none;
+  backdrop-filter:blur(3px);transition:opacity .3s;
+}
+#drag-hint.hidden{opacity:0;pointer-events:none;}
 
 /* ── SCREENS ── */
-.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;}
+.screen{
+  position:fixed;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:20;gap:10px;
+}
 .screen.hidden{display:none;}
-#screen-menu{background:linear-gradient(160deg,rgba(6,20,4,.95)0%,rgba(10,50,15,.95)100%);}
-#screen-phase{background:rgba(6,20,4,.92);backdrop-filter:blur(10px);}
-#screen-win-phase{background:rgba(6,20,4,.92);backdrop-filter:blur(10px);}
-#screen-fail{background:rgba(20,4,4,.92);backdrop-filter:blur(10px);}
-#screen-gameclear{background:rgba(6,20,4,.92);backdrop-filter:blur(10px);}
 
-.s-title{font-family:'Fredoka One',cursive;font-size:clamp(2rem,7vw,4rem);color:var(--yellow);text-align:center;text-shadow:0 0 30px var(--yellow);animation:glow 1.8s ease-in-out infinite alternate;margin-bottom:8px;}
-@keyframes glow{from{text-shadow:0 0 20px var(--yellow);}to{text-shadow:0 0 50px #ffb347,0 0 80px var(--yellow);}}
-.s-sub{font-family:'Bubblegum Sans',cursive;font-size:clamp(1rem,3.5vw,1.4rem);color:#a7f3d0;text-align:center;line-height:1.6;margin-bottom:16px;}
-.s-info{font-family:'Bubblegum Sans',cursive;font-size:clamp(.85rem,2.5vw,1.1rem);color:#fde68a;text-align:center;margin-bottom:12px;}
-.btn-g{padding:14px 44px;font-family:'Fredoka One',cursive;font-size:clamp(1.1rem,3.5vw,1.5rem);color:#fff;border:none;border-radius:50px;cursor:pointer;letter-spacing:1px;box-shadow:0 6px 0 rgba(0,0,0,.4);transition:transform .1s;margin:4px;}
-.btn-g:active{transform:translateY(4px);}
+/* shared screen overlay */
+.screen-bg-green{background:rgba(4,24,4,.92);backdrop-filter:blur(12px);}
+.screen-bg-dark{background:rgba(10,2,28,.93);backdrop-filter:blur(12px);}
+
+/* ── TYPOGRAPHY ── */
+.s-emoji{font-size:clamp(2.5rem,7vw,4rem);animation:floaty 1.6s ease-in-out infinite alternate;}
+@keyframes floaty{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+
+.s-title{
+  font-family:'Fredoka One',cursive;
+  font-size:clamp(1.8rem,6vw,3.6rem);
+  text-align:center;line-height:1.1;
+  animation:titleGlow 2s ease-in-out infinite alternate;
+}
+@keyframes titleGlow{
+  from{text-shadow:0 0 20px currentColor;}
+  to{text-shadow:0 0 45px currentColor,0 0 80px currentColor;}
+}
+.col-green{color:var(--gr);}
+.col-yellow{color:var(--yl);}
+.col-pink{color:var(--pk);}
+.col-mint{color:var(--mn);}
+
+.s-sub{
+  font-family:'Bubblegum Sans',cursive;
+  font-size:clamp(.9rem,2.8vw,1.3rem);
+  color:#a7f3d0;text-align:center;line-height:1.6;
+  max-width:400px;
+}
+.s-info{
+  font-family:'Bubblegum Sans',cursive;
+  font-size:clamp(.8rem,2.3vw,1.05rem);
+  color:#fde68a;text-align:center;
+  background:rgba(0,0,0,.3);padding:6px 18px;border-radius:20px;
+}
+
+/* ── BUTTONS ── */
+.btn{
+  padding:13px 40px;font-family:'Fredoka One',cursive;
+  font-size:clamp(1rem,3vw,1.4rem);color:#fff;border:none;
+  border-radius:50px;cursor:pointer;letter-spacing:1px;
+  box-shadow:0 5px 0 rgba(0,0,0,.4);transition:transform .1s,box-shadow .1s;
+}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.4);}
 .btn-green{background:linear-gradient(135deg,#22c55e,#15803d);}
 .btn-orange{background:linear-gradient(135deg,#f97316,#c2410c);}
 .btn-grey{background:linear-gradient(135deg,#6b7280,#374151);}
-.phase-emoji{font-size:clamp(2.5rem,8vw,4.5rem);animation:floaty 1.5s ease-in-out infinite alternate;margin-bottom:6px;}
-@keyframes floaty{from{transform:translateY(0)}to{transform:translateY(-12px)}}
+.btn-yellow{background:linear-gradient(135deg,var(--yl),#f59e0b);color:#1a0535;}
 
-/* drag hint */
-#drag-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);font-family:'Bubblegum Sans',cursive;font-size:clamp(.85rem,2.5vw,1.1rem);color:rgba(255,255,255,.7);background:rgba(0,0,0,.45);padding:7px 20px;border-radius:30px;z-index:10;pointer-events:none;backdrop-filter:blur(3px);}
-#drag-hint.hidden{display:none;}
+/* ── BUBBLE SLOT (same as game1) ── */
+.bubble-slot{width:150px;height:150px;position:relative;flex-shrink:0;}
+.bubble-slot canvas{position:absolute;top:0;left:0;border-radius:50%;}
 
-/* back button */
-#btn-back{position:fixed;top:8px;left:16px;z-index:30;font-family:'Fredoka One',cursive;font-size:1rem;color:#fff;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:6px 16px;cursor:pointer;backdrop-filter:blur(4px);}
+/* ── PAUSE OVERLAY ── */
+#screen-pause{background:rgba(4,20,4,.88);backdrop-filter:blur(16px);}
 </style>
 </head>
 <body>
@@ -52,550 +131,905 @@ canvas{display:block;position:fixed;top:0;left:0;z-index:0;}
 
 <!-- HUD -->
 <div id="hud" style="display:none">
-  <div id="hud-phase">Fase 1</div>
+  <div id="hud-phase">Fase 1/8</div>
   <div id="hud-hits">🎯 0/0</div>
-  <div id="hud-tries">🍕🍕🍕</div>
+  <div id="hud-tries"></div>
 </div>
 <div id="hud-wind" style="display:none"></div>
-<div id="drag-hint">👆 Arraste para mirar e solte para lançar!</div>
-<button id="btn-back" onclick="goHub()">🏠 Menu</button>
 
-<!-- MENU PHASE INTRO -->
-<div id="screen-phase" class="screen hidden">
-  <div class="phase-emoji" id="p-emoji">🌿</div>
-  <div class="s-title" id="p-title">Fase 1</div>
-  <div class="s-sub" id="p-sub">Acerte a cesta!</div>
-  <div class="s-info" id="p-info"></div>
-  <button class="btn-g btn-green" id="btn-start-phase">▶ JOGAR</button>
+<!-- CONTROLS -->
+<button id="btn-back"  onclick="goHub()">🏠</button>
+<button id="btn-pause" onclick="togglePause()" style="display:none">⏸</button>
+<div id="drag-hint">👆 Arraste o item para mirar e solte!</div>
+
+<!-- PHASE INTRO -->
+<div id="screen-intro" class="screen screen-bg-green hidden">
+  <div class="s-emoji" id="pi-emoji">🌿</div>
+  <div class="s-title col-yellow" id="pi-title">Fase 1</div>
+  <div class="s-sub" id="pi-sub">Acerte a cesta!</div>
+  <div class="s-info" id="pi-info"></div>
+  <button class="btn btn-green" id="btn-play">▶ JOGAR</button>
 </div>
 
-<!-- WIN PHASE -->
-<div id="screen-win-phase" class="screen hidden">
-  <div class="phase-emoji">🎉</div>
-  <div class="s-title" style="color:var(--mint)">ACERTOU! 🎯</div>
-  <div class="s-sub" id="wp-msg">Fase concluída!</div>
-  <button class="btn-g btn-green" id="btn-next-phase">Próxima Fase ➡</button>
+<!-- PHASE WIN -->
+<div id="screen-phwin" class="screen screen-bg-green hidden">
+  <div class="s-emoji">🎉</div>
+  <div class="s-title col-mint">FASE CONCLUÍDA! 🎯</div>
+  <div class="bubble-slot" style="margin:6px auto;">
+    <canvas id="pw-bubble" width="150" height="150"></canvas>
+  </div>
+  <div class="s-sub" id="pw-msg">Ótimo arremesso!</div>
+  <button class="btn btn-green" id="btn-next">Próxima Fase ➡</button>
+  <button class="btn btn-grey"  onclick="goHub()">🏠 Menu</button>
 </div>
 
-<!-- FAIL -->
-<div id="screen-fail" class="screen hidden">
-  <div class="phase-emoji">😢</div>
-  <div class="s-title" style="color:var(--pink)">ACABOU!</div>
-  <div class="s-sub" id="fail-msg">Sem arremessos!</div>
-  <button class="btn-g btn-orange" id="btn-retry">🔁 Tentar Novamente</button>
-  <button class="btn-g btn-grey" onclick="goHub()">🏠 Menu</button>
+<!-- GAME OVER -->
+<div id="screen-gameover" class="screen screen-bg-dark hidden">
+  <div class="s-emoji">😢</div>
+  <div class="s-title col-pink">GAME OVER!</div>
+  <div class="bubble-slot" style="margin:6px auto;">
+    <canvas id="go-bubble" width="150" height="150"></canvas>
+  </div>
+  <div class="s-sub" id="go-msg">Sem arremessos!</div>
+  <button class="btn btn-orange" id="btn-retry">🔁 Tentar Novamente</button>
+  <button class="btn btn-grey"   onclick="goHub()">🏠 Menu</button>
+</div>
+
+<!-- PAUSE -->
+<div id="screen-pause" class="screen hidden">
+  <div class="s-emoji">⏸️</div>
+  <div class="s-title col-yellow">PAUSADO</div>
+  <button class="btn btn-green"  onclick="togglePause()">▶ CONTINUAR</button>
+  <button class="btn btn-orange" id="btn-restart-pause">🔁 Reiniciar Fase</button>
+  <button class="btn btn-grey"   onclick="goHub()">🏠 Menu</button>
 </div>
 
 <!-- GAME CLEAR -->
-<div id="screen-gameclear" class="screen hidden">
-  <div class="phase-emoji">🏆</div>
-  <div class="s-title">PARABÉNS<br>MANU! 🎉</div>
-  <div class="s-sub">Você completou todas as<br>8 fases do Piquenique! 💕</div>
-  <button class="btn-g btn-green" id="btn-play-again">🎮 Jogar de Novo</button>
-  <button class="btn-g btn-grey" onclick="goHub()">🏠 Menu</button>
+<div id="screen-clear" class="screen screen-bg-green hidden">
+  <div class="s-emoji">🏆</div>
+  <div class="s-title col-yellow">PARABÉNS<br>MANU! 🎉</div>
+  <div class="s-sub">Você completou todas as 8 fases<br>do Piquenique! 💕</div>
+  <button class="btn btn-green"  id="btn-again">🎮 Jogar de Novo</button>
+  <button class="btn btn-grey"   onclick="goHub()">🏠 Menu</button>
 </div>
 
-<audio id="sfx-hit" src="menu_music.mp3" style="display:none"></audio>
+<audio id="snd-hit"  src="menu_music.mp3" preload="auto"></audio>
+<audio id="snd-miss" src="menu_music.mp3" preload="auto"></audio>
 <audio id="game-music" loop><source src="game_music.mp3" type="audio/mpeg"></audio>
 
 <script>
 'use strict';
 function goHub(){ window.location.href='index.html'; }
 
-/* ══════════════════════════
+/* ════════════════════════════════════════════
    CANVAS
-══════════════════════════ */
-const C=document.getElementById('gc'), X=C.getContext('2d');
-function resize(){ C.width=innerWidth; C.height=innerHeight; }
-resize(); window.addEventListener('resize',()=>{ resize(); initScene(); });
+════════════════════════════════════════════ */
+const C = document.getElementById('gc');
+const X = C.getContext('2d');
+function resize(){ C.width = innerWidth; C.height = innerHeight; }
+resize();
+window.addEventListener('resize', () => { resize(); if(gameRunning) initScene(); });
 
-/* ══════════════════════════
+/* ════════════════════════════════════════════
    PHASE CONFIGS
-══════════════════════════ */
-const PHASES=[
-  // {hits, tries, basketW, basketH, basketMove, moveSpeed, wind, gravity, bouncy}
-  {hits:3,  tries:6, bw:.18, bh:.12, move:false, mspd:0,   wind:0,    gravity:1,   bouncy:false, desc:'Acerte 3 itens na cesta!',     emoji:'🌿'},
-  {hits:4,  tries:6, bw:.15, bh:.11, move:false, mspd:0,   wind:0,    gravity:1,   bouncy:false, desc:'Cesta menor — acerte 4!',       emoji:'🌸'},
-  {hits:5,  tries:6, bw:.14, bh:.10, move:true,  mspd:1.2, wind:0,    gravity:1,   bouncy:false, desc:'Cesta em movimento — acerte 5!', emoji:'🍃'},
-  {hits:6,  tries:5, bw:.13, bh:.09, move:true,  mspd:1.8, wind:.08,  gravity:1,   bouncy:false, desc:'Vento fraco — acerte 6!',        emoji:'💨'},
-  {hits:7,  tries:5, bw:.12, bh:.09, move:true,  mspd:2.4, wind:.14,  gravity:1,   bouncy:false, desc:'Vento forte — acerte 7!',        emoji:'🌬️'},
-  {hits:8,  tries:4, bw:.11, bh:.08, move:true,  mspd:3.0, wind:.18,  gravity:1.1, bouncy:false, desc:'Super difícil — acerte 8!',      emoji:'⚡'},
-  {hits:9,  tries:4, bw:.10, bh:.08, move:true,  mspd:3.6, wind:.20,  gravity:1.1, bouncy:true,  desc:'Cesta saltitante — acerte 9!',   emoji:'🔥'},
-  {hits:10, tries:3, bw:.09, bh:.07, move:true,  mspd:4.2, wind:.24,  gravity:1.2, bouncy:true,  desc:'MODO FINAL — acerte 10!',        emoji:'👑'},
+  bw/bh = basket size as fraction of canvas
+  mspd  = basket horizontal speed px/frame
+  wind  = horizontal acceleration per frame (signed random each frame)
+  grav  = gravity multiplier
+  bouncy= vertical sine movement
+════════════════════════════════════════════ */
+const PHASES = [
+  {hits:3,  tries:7, bw:.20, bh:.14, move:false, mspd:0,   wind:0,    grav:1,   bouncy:false, desc:'Acerte 3 itens na cesta!',      emoji:'🌿', bg:'#7ed6f5'},
+  {hits:4,  tries:7, bw:.17, bh:.13, move:false, mspd:0,   wind:0,    grav:1,   bouncy:false, desc:'Cesta menor — acerte 4!',        emoji:'🌸', bg:'#a8e6cf'},
+  {hits:5,  tries:6, bw:.15, bh:.12, move:true,  mspd:1.5, wind:0,    grav:1,   bouncy:false, desc:'Cesta em movimento — acerte 5!', emoji:'🍃', bg:'#87ceeb'},
+  {hits:6,  tries:6, bw:.14, bh:.11, move:true,  mspd:2.0, wind:.06,  grav:1,   bouncy:false, desc:'Vento fraco — acerte 6!',        emoji:'💨', bg:'#b8d4e8'},
+  {hits:7,  tries:5, bw:.13, bh:.10, move:true,  mspd:2.5, wind:.10,  grav:1,   bouncy:false, desc:'Vento forte — acerte 7!',        emoji:'🌬️',bg:'#9fc5d8'},
+  {hits:8,  tries:5, bw:.12, bh:.09, move:true,  mspd:3.0, wind:.14,  grav:1.1, bouncy:false, desc:'Gravidade extra — acerte 8!',    emoji:'⚡', bg:'#7ab8d0'},
+  {hits:9,  tries:4, bw:.11, bh:.09, move:true,  mspd:3.6, wind:.16,  grav:1.1, bouncy:true,  desc:'Cesta saltitante — acerte 9!',   emoji:'🔥', bg:'#68a8c8'},
+  {hits:10, tries:4, bw:.10, bh:.08, move:true,  mspd:4.5, wind:.20,  grav:1.2, bouncy:true,  desc:'MODO FINAL — acerte 10! 👑',     emoji:'👑', bg:'#5898b8'},
 ];
 
-/* ══════════════════════════
-   IMAGE LOADER
-══════════════════════════ */
-function loadImg(src){ const i=new Image(); i.ok=false; i.onload=()=>i.ok=true; i.src=src; return i; }
-const itemImgs=['item1.png','item2.png','item3.png','item4.png','item5.png','item6.png'].map(loadImg);
-const avatarImg=loadImg('avancou.png');
-
-/* ══════════════════════════
-   STATE
-══════════════════════════ */
-let phase=0; // 0-indexed
-let hitsNeeded, triesLeft, hitsGot;
-let cfg; // current phase config
-const ST={IDLE:0,DRAGGING:1,FLYING:2,SCORED:3,FAILED:4};
-let gState=ST.IDLE;
-
-/* ══════════════════════════
-   SLINGSHOT
-══════════════════════════ */
-let sling={x:0,y:0,r:28}; // anchor point of slingshot pocket
-
-/* ══════════════════════════
-   BASKET
-══════════════════════════ */
-let basket={x:0,y:0,w:0,h:0,vx:1,bounceT:0};
-
-/* ══════════════════════════
-   PROJECTILE
-══════════════════════════ */
-let proj={x:0,y:0,vx:0,vy:0,r:22,active:false,imgIdx:0,rot:0,trail:[]};
-
-/* ══════════════════════════
-   DRAG
-══════════════════════════ */
-let drag={active:false,sx:0,sy:0}; // touch/mouse drag start
-
-/* ══════════════════════════
-   PARTICLES
-══════════════════════════ */
-let particles=[];
-function spawnParticles(x,y){
-  const cols=['#ffe066','#ff6b9d','#4dffd2','#c44dff','#ff7043'];
-  for(let i=0;i<20;i++) particles.push({x,y,vx:(Math.random()-.5)*12,vy:(Math.random()-.5)*12-4,r:3+Math.random()*8,color:cols[Math.floor(Math.random()*cols.length)],life:1});
+/* ════════════════════════════════════════════
+   IMAGES
+════════════════════════════════════════════ */
+function loadImg(src){
+  const img = new Image();
+  img.ok = false;
+  img.onload = () => img.ok = true;
+  img.src = src;
+  return img;
 }
+const itemImgs  = ['item1.png','item2.png','item3.png','item4.png','item5.png','item6.png'].map(loadImg);
+const avancouImg = loadImg('avancou.png');
+const gameoverImg= loadImg('gameover.jpg');
 
-/* ══════════════════════════
-   INIT SCENE
-══════════════════════════ */
+/* ════════════════════════════════════════════
+   GAME STATE
+════════════════════════════════════════════ */
+const PS = { IDLE:0, DRAG:1, FLY:2, HIT:3, MISS:4 };
+let phase       = 0;
+let hitsNeeded  = 0;
+let triesLeft   = 0;
+let hitsGot     = 0;
+let projState   = PS.IDLE;
+let gameRunning = false;
+let paused      = false;
+let cfg         = PHASES[0];
+
+/* ════════════════════════════════════════════
+   SCENE OBJECTS
+════════════════════════════════════════════ */
+// Slingshot — fork tips define anchor points
+let sl = { x:0, y:0 };          // centre anchor (where elastic meets)
+let forkL = { x:0, y:0 };       // left tip
+let forkR = { x:0, y:0 };       // right tip
+
+// Basket
+let bk = { x:0, y:0, w:0, h:0, vx:0, bounceT:0 };
+
+// Projectile
+let pr = { x:0, y:0, vx:0, vy:0, r:0, rot:0, imgIdx:0, trail:[] };
+
+// Drag state
+let dragActive = false;
+
+// Particles
+let parts = [];
+
+// Animated background elements
+let clouds = [];
+let trees  = [];
+let bgT    = 0; // time tick for animation
+
+/* ════════════════════════════════════════════
+   INIT SCENE  — called on phase start & resize
+════════════════════════════════════════════ */
 function initScene(){
-  cfg=PHASES[phase];
-  // slingshot: left third, vertically centered a bit above middle
-  sling.x=C.width*.22;
-  sling.y=C.height*.62;
-  // basket: right side
-  basket.w=C.width*cfg.bw;
-  basket.h=C.height*cfg.bh;
-  basket.x=C.width*.72-basket.w/2;
-  basket.y=C.height*.55-basket.h;
-  basket.vx=cfg.mspd;
-  basket.bounceT=0;
-  resetProjectile();
+  cfg = PHASES[phase];
+  const W = C.width, H = C.height;
+
+  // Slingshot: left 18% of screen, ground level at 68%
+  sl.x    = W * .18;
+  sl.y    = H * .60;
+  forkL.x = sl.x - W * .035;  forkL.y = sl.y - H * .10;
+  forkR.x = sl.x + W * .035;  forkR.y = sl.y - H * .10;
+
+  // Basket: right half, sitting on ground
+  bk.w = W * cfg.bw;
+  bk.h = H * cfg.bh;
+  bk.x = W * .72 - bk.w / 2;
+  bk.y = H * .68 - bk.h;
+  bk.vx = cfg.mspd;
+  bk.bounceT = 0;
+
+  // Projectile radius scales with screen
+  pr.r = Math.max(16, Math.min(W * .028, 28));
+  resetProj();
+
+  // Animated clouds (3 layers)
+  clouds = [
+    { x: W*.15, y: H*.10, sc:1.0, spd:.22 },
+    { x: W*.50, y: H*.07, sc:0.7, spd:.15 },
+    { x: W*.82, y: H*.13, sc:0.85,spd:.18 },
+    { x: W*.35, y: H*.18, sc:0.6, spd:.12 },
+  ];
+
+  // Trees (parallax — slow moving decorative)
+  trees = [
+    { x: W*.42, layer:1 },
+    { x: W*.60, layer:0.8 },
+    { x: W*.92, layer:1.1 },
+    { x: W*.08, layer:0.9 },
+  ];
 }
 
-function resetProjectile(){
-  proj.x=sling.x;
-  proj.y=sling.y;
-  proj.vx=0; proj.vy=0;
-  proj.active=false;
-  proj.rot=0;
-  proj.trail=[];
-  proj.imgIdx=Math.floor(Math.random()*itemImgs.length);
-  gState=ST.IDLE;
+function resetProj(){
+  pr.x    = sl.x;
+  pr.y    = sl.y;
+  pr.vx   = 0;
+  pr.vy   = 0;
+  pr.rot  = 0;
+  pr.trail= [];
+  pr.imgIdx = Math.floor(Math.random() * itemImgs.length);
+  projState = PS.IDLE;
+  dragActive = false;
 }
 
-/* ══════════════════════════
-   DRAW FUNCTIONS
-══════════════════════════ */
-function drawBg(){
-  // sky gradient — warm picnic day
-  const sky=X.createLinearGradient(0,0,0,C.height*.55);
-  sky.addColorStop(0,'#87ceeb'); sky.addColorStop(1,'#c8e8f8');
-  X.fillStyle=sky; X.fillRect(0,0,C.width,C.height*.55);
+/* ════════════════════════════════════════════
+   PHYSICS
+   Gravity: 0.52 * cfg.grav px/frame²
+   Wind:    cfg.wind * random ±1 px/frame
+   MAX_PULL: 18% of canvas width
+════════════════════════════════════════════ */
+const BASE_GRAV = 0.52;
+const LAUNCH_V  = 28; // max launch speed at full pull
 
-  // clouds
-  drawCloud(.15,.12,.9); drawCloud(.55,.08,.7); drawCloud(.8,.15,.85);
+function maxPull(){ return C.width * .18; }
 
-  // grass
-  const grass=X.createLinearGradient(0,C.height*.53,0,C.height);
-  grass.addColorStop(0,'#4ade80'); grass.addColorStop(.3,'#22c55e'); grass.addColorStop(1,'#15803d');
-  X.fillStyle=grass; X.fillRect(0,C.height*.53,C.width,C.height*.47);
+function physicsStep(){
+  if(projState !== PS.FLY) return;
 
-  // ground line
-  X.strokeStyle='#166534'; X.lineWidth=3;
-  X.beginPath(); X.moveTo(0,C.height*.55); X.lineTo(C.width,C.height*.55); X.stroke();
+  // gravity
+  pr.vy += BASE_GRAV * cfg.grav;
 
-  // flowers on ground
-  for(let i=0;i<12;i++){
-    const fx=C.width*(0.04+i*0.085), fy=C.height*.54;
-    X.font='clamp(14px,2.5vw,22px) serif'; X.textAlign='center';
-    X.fillText(['🌸','🌼','🌺'][i%3],fx,fy+10);
-  }
-}
-
-function drawCloud(xf,yf,sc){
-  const cx=C.width*xf, cy=C.height*yf, r=C.width*.06*sc;
-  X.fillStyle='rgba(255,255,255,.85)';
-  X.beginPath(); X.arc(cx,cy,r,0,Math.PI*2); X.fill();
-  X.beginPath(); X.arc(cx+r*.7,cy+r*.2,r*.7,0,Math.PI*2); X.fill();
-  X.beginPath(); X.arc(cx-r*.6,cy+r*.2,r*.6,0,Math.PI*2); X.fill();
-  X.beginPath(); X.arc(cx+r*.2,cy+r*.3,r*.8,0,Math.PI*2); X.fill();
-}
-
-function drawSlingshot(){
-  const sx=sling.x, sy=sling.y;
-  // trunk
-  X.strokeStyle='#92400e'; X.lineWidth=8; X.lineCap='round';
-  X.beginPath(); X.moveTo(sx,sy+C.height*.18); X.lineTo(sx,sy-C.height*.04); X.stroke();
-  // Y fork
-  X.lineWidth=6;
-  X.beginPath(); X.moveTo(sx,sy-C.height*.03); X.lineTo(sx-C.width*.04,sy-C.height*.1); X.stroke();
-  X.beginPath(); X.moveTo(sx,sy-C.height*.03); X.lineTo(sx+C.width*.04,sy-C.height*.1); X.stroke();
-
-  // fork tips
-  const lt={x:sx-C.width*.04, y:sy-C.height*.1};
-  const rt={x:sx+C.width*.04, y:sy-C.height*.1};
-
-  if(drag.active && gState===ST.DRAGGING){
-    // elastic bands to dragged position
-    X.strokeStyle='#78350f'; X.lineWidth=3;
-    X.beginPath(); X.moveTo(lt.x,lt.y); X.lineTo(proj.x,proj.y); X.stroke();
-    X.beginPath(); X.moveTo(rt.x,rt.y); X.lineTo(proj.x,proj.y); X.stroke();
-  } else if(gState===ST.IDLE){
-    // bands to resting proj
-    X.strokeStyle='#78350f'; X.lineWidth=3;
-    X.beginPath(); X.moveTo(lt.x,lt.y); X.lineTo(sling.x,sling.y); X.stroke();
-    X.beginPath(); X.moveTo(rt.x,rt.y); X.lineTo(sling.x,sling.y); X.stroke();
-  }
-}
-
-function drawBasket(){
-  const bx=basket.x, by=basket.y, bw=basket.w, bh=basket.h;
-  // wicker basket body
-  X.fillStyle='#92400e';
-  X.beginPath();
-  X.moveTo(bx,by);
-  X.lineTo(bx+bw,by);
-  X.lineTo(bx+bw*1.05,by+bh);
-  X.lineTo(bx-bw*.05,by+bh);
-  X.closePath(); X.fill();
-
-  // basket pattern
-  X.strokeStyle='#78350f'; X.lineWidth=2;
-  for(let i=1;i<4;i++){
-    const yy=by+bh*(i/4);
-    X.beginPath(); X.moveTo(bx,yy); X.lineTo(bx+bw,yy); X.stroke();
-  }
-  for(let i=1;i<5;i++){
-    const xx=bx+bw*(i/5);
-    X.beginPath(); X.moveTo(xx,by); X.lineTo(xx+bw*.05,by+bh); X.stroke();
+  // wind — adds a small horizontal nudge each frame
+  if(cfg.wind > 0){
+    pr.vx += cfg.wind * (Math.random() * 2 - 1) * .5;
   }
 
-  // rim (opening highlight) — this is where we detect hits
-  X.strokeStyle='#fcd34d'; X.lineWidth=4;
-  X.beginPath(); X.moveTo(bx-bw*.05,by); X.lineTo(bx+bw*1.05,by); X.stroke();
+  pr.x  += pr.vx;
+  pr.y  += pr.vy;
+  pr.rot += pr.vx * 0.05;
 
-  // handle
-  X.strokeStyle='#92400e'; X.lineWidth=5;
-  X.beginPath(); X.arc(bx+bw/2, by-bh*.2, bw*.32, Math.PI, 0); X.stroke();
+  // record trail (max 24 pts)
+  pr.trail.push({ x: pr.x, y: pr.y });
+  if(pr.trail.length > 24) pr.trail.shift();
 
-  // gingham cloth inside top
-  X.fillStyle='rgba(254,215,170,.6)';
-  X.fillRect(bx,by,bw,bh*.15);
-
-  // wind indicator text
-  if(cfg.wind>0){
-    const dir=basket.vx>0?'→':'←';
-    X.font='bold clamp(11px,2.5vw,16px) "Bubblegum Sans",cursive';
-    X.fillStyle='rgba(255,255,255,.7)'; X.textAlign='center';
-    X.fillText('🌬️ Vento '+dir, bx+bw/2, by-bh*.45);
-  }
-}
-
-function drawProjectile(){
-  if(proj.trail.length>1){
-    X.strokeStyle='rgba(255,220,100,.4)'; X.lineWidth=2; X.lineCap='round';
-    X.beginPath(); X.moveTo(proj.trail[0].x,proj.trail[0].y);
-    proj.trail.forEach(p=>X.lineTo(p.x,p.y)); X.stroke();
-  }
-  const img=itemImgs[proj.imgIdx];
-  X.save(); X.translate(proj.x,proj.y); X.rotate(proj.rot);
-  X.shadowColor='#ffe066'; X.shadowBlur=12;
-  if(img.ok){ X.drawImage(img,-proj.r,-proj.r,proj.r*2,proj.r*2); }
-  else { X.fillStyle='#fcd34d'; X.beginPath(); X.arc(0,0,proj.r,0,Math.PI*2); X.fill(); }
-  X.shadowBlur=0; X.restore();
-}
-
-function drawAimGuide(){
-  if(gState!==ST.DRAGGING) return;
-  const dx=sling.x-proj.x, dy=sling.y-proj.y;
-  const maxPull=C.width*.14;
-  const dist=Math.min(Math.sqrt(dx*dx+dy*dy),maxPull);
-  const angle=Math.atan2(dy,dx);
-  const power=dist/maxPull;
-  const vx0=-Math.cos(angle)*power*22;
-  const vy0=-Math.sin(angle)*power*22;
-  const g=0.55*cfg.gravity;
-  // draw dotted trajectory prediction
-  X.fillStyle='rgba(255,230,100,.55)';
-  let px=proj.x, py=proj.y, pvx=vx0, pvy=vy0;
-  for(let i=0;i<40;i++){
-    px+=pvx; py+=pvy; pvy+=g;
-    if(i%3===0){
-      const r=4-i*.06; if(r<1) break;
-      X.beginPath(); X.arc(px,py,r,0,Math.PI*2); X.fill();
-    }
-    if(py>C.height*.55) break;
-  }
-}
-
-function drawParticles(){
-  for(let i=particles.length-1;i>=0;i--){
-    const p=particles[i]; p.x+=p.vx;p.y+=p.vy;p.vy+=.35;p.life-=.03;
-    if(p.life<=0){particles.splice(i,1);continue;}
-    X.globalAlpha=p.life;X.fillStyle=p.color;X.beginPath();X.arc(p.x,p.y,p.r,0,Math.PI*2);X.fill();
-  }
-  X.globalAlpha=1;
-}
-
-function drawPlayerChar(){
-  // small character near slingshot
-  const px=sling.x-C.width*.1, py=C.height*.53;
-  const hr=C.width*.04;
-  // body
-  X.fillStyle='#ec4899';
-  X.beginPath(); X.ellipse(px,py-hr*1.8,hr*.6,hr*1.2,0,0,Math.PI*2); X.fill();
-  // head
-  X.fillStyle='#fde68a'; X.beginPath(); X.arc(px,py-hr*3.2,hr,0,Math.PI*2); X.fill();
-  if(avatarImg.ok){ X.save(); X.beginPath(); X.arc(px,py-hr*3.2,hr,0,Math.PI*2); X.clip(); X.drawImage(avatarImg,px-hr,py-hr*3.2-hr,hr*2,hr*2); X.restore(); }
-  // arm pointing at slingshot
-  X.strokeStyle='#fca5a5'; X.lineWidth=4; X.lineCap='round';
-  X.beginPath(); X.moveTo(px+hr*.5,py-hr*2); X.lineTo(sling.x-C.width*.04,sling.y); X.stroke();
-  // legs
-  X.fillStyle='#fca5a5'; X.fillRect(px-hr*.35,py-hr*.8,hr*.3,hr*.9); X.fillRect(px+hr*.05,py-hr*.8,hr*.3,hr*.9);
-}
-
-/* ══════════════════════════
-   BASKET MOVEMENT
-══════════════════════════ */
-function updateBasket(){
-  if(!cfg.move) return;
-  basket.x+=basket.vx;
-  const minX=C.width*.5, maxX=C.width*.94-basket.w;
-  if(basket.x<minX||basket.x>maxX) basket.vx*=-1;
-  // bouncy mode
-  if(cfg.bouncy){
-    basket.bounceT+=0.06;
-    basket.y=(C.height*.55-basket.h)+(Math.sin(basket.bounceT)*C.height*.06);
-  }
-}
-
-/* ══════════════════════════
-   COLLISION DETECTION
-══════════════════════════ */
-function checkBasketHit(){
-  // check if proj enters the basket opening (top rim area)
-  const rimY=basket.y+basket.h*.1; // slightly inside top
-  const rimX1=basket.x-basket.w*.05, rimX2=basket.x+basket.w*1.05;
-  const inX=proj.x>=rimX1 && proj.x<=rimX2;
-  const inY=proj.y>=basket.y-proj.r && proj.y<=rimY+proj.r*2;
-  const movingDown=proj.vy>0;
-  return inX && inY && movingDown;
-}
-
-/* ══════════════════════════
-   UPDATE PHYSICS
-══════════════════════════ */
-const gravity=0.55;
-function updatePhysics(){
-  if(gState!==ST.FLYING) return;
-  proj.vx+=cfg.wind*(Math.random()-.5)*2; // wind jitter
-  proj.vy+=gravity*cfg.gravity;
-  proj.x+=proj.vx;
-  proj.y+=proj.vy;
-  proj.rot+=proj.vx*.04;
-
-  proj.trail.push({x:proj.x,y:proj.y});
-  if(proj.trail.length>18) proj.trail.shift();
-
-  if(checkBasketHit()){
+  // ── COLLISION ──
+  if(checkHit()){
     hitsGot++;
-    spawnParticles(proj.x,proj.y);
-    updateHudDisplay();
-    if(hitsGot>=hitsNeeded){
-      setTimeout(()=>showWinPhase(),400);
+    spawnParticles(pr.x, pr.y);
+    updateHUD();
+    projState = PS.HIT;
+    if(hitsGot >= hitsNeeded){
+      setTimeout(showPhaseWin, 500);
     } else {
-      setTimeout(()=>{
-        triesLeft--;
-        if(triesLeft<=0 && hitsGot<hitsNeeded){ showFail(); return; }
-        resetProjectile(); updateHudDisplay();
-      },500);
+      setTimeout(nextThrow, 600);
     }
-    gState=ST.SCORED;
     return;
   }
 
-  // missed: hit ground or exit
-  if(proj.y>C.height*.58 || proj.x>C.width+50 || proj.x<-50){
-    triesLeft--;
-    updateHudDisplay();
-    setTimeout(()=>{
-      if(triesLeft<=0){ showFail(); return; }
-      resetProjectile();
-    },300);
-    gState=ST.FAILED;
+  // ── OUT OF BOUNDS ──
+  if(pr.y > C.height * .80 || pr.x > C.width + 80 || pr.x < -80){
+    projState = PS.MISS;
+    setTimeout(nextThrow, 400);
   }
 }
 
-/* ══════════════════════════
-   HUD
-══════════════════════════ */
-function updateHudDisplay(){
-  document.getElementById('hud-phase').textContent='Fase '+(phase+1)+'/8';
-  document.getElementById('hud-hits').textContent='🎯 '+hitsGot+'/'+hitsNeeded;
-  document.getElementById('hud-tries').textContent='🍕'.repeat(Math.max(0,triesLeft))+'⬛'.repeat(Math.max(0,cfg.tries-triesLeft));
-  const windEl=document.getElementById('hud-wind');
-  if(cfg.wind>0){ windEl.style.display='block'; windEl.textContent='🌬️ Vento: '+Math.round(cfg.wind*100)+'%'; }
-  else windEl.style.display='none';
+/* The basket opening is the top 20% of the basket.
+   We check if the centre of the projectile crosses
+   into this zone while moving downward.           */
+function checkHit(){
+  const rimTop    = bk.y;
+  const rimBottom = bk.y + bk.h * .22;
+  const rimLeft   = bk.x;
+  const rimRight  = bk.x + bk.w;
+  return (
+    pr.vy   > 0        &&
+    pr.x    > rimLeft  &&
+    pr.x    < rimRight &&
+    pr.y    > rimTop   - pr.r &&
+    pr.y    < rimBottom + pr.r
+  );
 }
 
-/* ══════════════════════════
+/* ════════════════════════════════════════════
+   BASKET MOVEMENT
+════════════════════════════════════════════ */
+function updateBasket(){
+  if(!cfg.move) return;
+  bk.x += bk.vx;
+  const minX = C.width * .48;
+  const maxX = C.width * .95 - bk.w;
+  if(bk.x < minX || bk.x > maxX) bk.vx *= -1;
+  if(cfg.bouncy){
+    bk.bounceT += .055;
+    bk.y = (C.height * .68 - bk.h) + Math.sin(bk.bounceT) * C.height * .055;
+  }
+}
+
+/* ════════════════════════════════════════════
+   PARTICLES
+════════════════════════════════════════════ */
+function spawnParticles(x, y){
+  const cols = ['#ffe066','#ff6b9d','#4dffd2','#c44dff','#ff7043','#22c55e'];
+  for(let i = 0; i < 22; i++){
+    parts.push({
+      x, y,
+      vx:(Math.random()-.5)*14,
+      vy:(Math.random()-.5)*14 - 5,
+      r:3 + Math.random()*8,
+      color:cols[Math.floor(Math.random()*cols.length)],
+      life:1
+    });
+  }
+}
+
+/* ════════════════════════════════════════════
+   DRAW — BACKGROUND (animated)
+════════════════════════════════════════════ */
+function drawBackground(){
+  const W = C.width, H = C.height;
+  bgT += .008;
+
+  // Sky gradient (colour changes with phase)
+  const skyTop = cfg.bg || '#7ed6f5';
+  const sky = X.createLinearGradient(0,0,0,H*.65);
+  sky.addColorStop(0, skyTop);
+  sky.addColorStop(1, '#e8f6fd');
+  X.fillStyle = sky;
+  X.fillRect(0, 0, W, H * .65);
+
+  // Animated clouds (parallax)
+  clouds.forEach(cl => {
+    cl.x += cl.spd;
+    if(cl.x > W + 100) cl.x = -100;
+    drawCloud(cl.x, cl.y, cl.sc);
+  });
+
+  // Rolling hills (3 layers, sine-wave)
+  drawHill(W, H, '#6ecc6b', .72, .06, bgT*.3,  .9);
+  drawHill(W, H, '#4ade80', .68, .05, bgT*.5,  1.2);
+  drawHill(W, H, '#22c55e', .65, .04, bgT*.7,  1.5);
+
+  // Flat ground
+  const grd = X.createLinearGradient(0, H*.64, 0, H);
+  grd.addColorStop(0,'#4ade80');
+  grd.addColorStop(.2,'#22c55e');
+  grd.addColorStop(1,'#14532d');
+  X.fillStyle = grd;
+  X.fillRect(0, H*.64, W, H*.36);
+
+  // Ground edge line
+  X.strokeStyle = '#166534'; X.lineWidth = 2;
+  X.beginPath(); X.moveTo(0, H*.67); X.lineTo(W, H*.67); X.stroke();
+
+  // Flowers along ground
+  X.font = Math.max(12, W*.022) + 'px serif';
+  X.textAlign = 'center';
+  const flowers = ['🌸','🌼','🌺','🌻','🌷'];
+  for(let i = 0; i < 14; i++){
+    const fx = W * (.03 + i * .069);
+    const fy = H * .665 + Math.sin(bgT * 2 + i) * 3;
+    X.fillText(flowers[i % flowers.length], fx, fy);
+  }
+
+  // Decorative trees (slow parallax drift)
+  trees.forEach(t => {
+    t.x -= t.layer * .18;
+    if(t.x < -60) t.x = W + 60;
+    drawTree(t.x, H * .67, W * .05 * t.layer);
+  });
+
+  // Picnic cloth on ground (near slingshot)
+  drawPicnicCloth();
+}
+
+function drawHill(W, H, color, yF, amp, phase, freq){
+  X.fillStyle = color;
+  X.beginPath();
+  X.moveTo(0, H);
+  for(let x = 0; x <= W; x += 4){
+    const y = H * yF - Math.sin(x / W * Math.PI * freq + phase) * H * amp;
+    if(x === 0) X.lineTo(x, y); else X.lineTo(x, y);
+  }
+  X.lineTo(W, H);
+  X.closePath();
+  X.fill();
+}
+
+function drawCloud(cx, cy, sc){
+  const r = C.width * .055 * sc;
+  X.fillStyle = 'rgba(255,255,255,.88)';
+  X.beginPath(); X.arc(cx,       cy,       r,       0, Math.PI*2); X.fill();
+  X.beginPath(); X.arc(cx+r*.72, cy+r*.18, r*.68,   0, Math.PI*2); X.fill();
+  X.beginPath(); X.arc(cx-r*.58, cy+r*.18, r*.58,   0, Math.PI*2); X.fill();
+  X.beginPath(); X.arc(cx+r*.22, cy+r*.28, r*.78,   0, Math.PI*2); X.fill();
+}
+
+function drawTree(tx, groundY, sz){
+  // trunk
+  X.fillStyle = '#92400e';
+  X.fillRect(tx - sz*.12, groundY - sz*.6, sz*.24, sz*.6);
+  // foliage (3 circles)
+  X.fillStyle = '#15803d';
+  X.beginPath(); X.arc(tx,          groundY-sz*.75, sz*.38, 0, Math.PI*2); X.fill();
+  X.fillStyle = '#16a34a';
+  X.beginPath(); X.arc(tx-sz*.2,    groundY-sz*.6,  sz*.28, 0, Math.PI*2); X.fill();
+  X.beginPath(); X.arc(tx+sz*.22,   groundY-sz*.62, sz*.25, 0, Math.PI*2); X.fill();
+}
+
+function drawPicnicCloth(){
+  const px = sl.x - C.width * .04;
+  const py = C.height * .68;
+  const w  = C.width * .12;
+  const h  = C.height * .04;
+  // red/white checkered cloth
+  X.fillStyle = '#ef4444';
+  X.fillRect(px - w/2, py - h, w, h);
+  X.fillStyle = 'rgba(255,255,255,.5)';
+  for(let i = 0; i < 4; i++){
+    for(let j = 0; j < 2; j++){
+      if((i+j)%2===0) X.fillRect(px - w/2 + i*(w/4), py - h + j*(h/2), w/4, h/2);
+    }
+  }
+}
+
+/* ════════════════════════════════════════════
+   DRAW — SLINGSHOT
+════════════════════════════════════════════ */
+function drawSlingshot(){
+  const W = C.width, H = C.height;
+  const sx = sl.x, sy = sl.y;
+
+  // trunk (thick brown stick)
+  X.strokeStyle = '#92400e'; X.lineWidth = Math.max(6, W*.012); X.lineCap = 'round';
+  X.beginPath(); X.moveTo(sx, sy + H*.18); X.lineTo(sx, sy - H*.02); X.stroke();
+
+  // Y-fork arms
+  X.lineWidth = Math.max(5, W*.009);
+  X.beginPath(); X.moveTo(sx, sy - H*.02); X.lineTo(forkL.x, forkL.y); X.stroke();
+  X.beginPath(); X.moveTo(sx, sy - H*.02); X.lineTo(forkR.x, forkR.y); X.stroke();
+
+  // Fork tip circles
+  X.fillStyle = '#78350f';
+  X.beginPath(); X.arc(forkL.x, forkL.y, W*.012, 0, Math.PI*2); X.fill();
+  X.beginPath(); X.arc(forkR.x, forkR.y, W*.012, 0, Math.PI*2); X.fill();
+
+  // Elastic bands
+  if(projState === PS.DRAG || projState === PS.IDLE){
+    const px = projState === PS.DRAG ? pr.x : sl.x;
+    const py = projState === PS.DRAG ? pr.y : sl.y;
+    // draw back band (goes behind projectile)
+    X.strokeStyle = '#a16207'; X.lineWidth = 3;
+    X.beginPath(); X.moveTo(forkL.x, forkL.y); X.lineTo(px, py); X.stroke();
+    X.beginPath(); X.moveTo(forkR.x, forkR.y); X.lineTo(px, py); X.stroke();
+  }
+}
+
+/* ════════════════════════════════════════════
+   DRAW — BASKET
+════════════════════════════════════════════ */
+function drawBasket(){
+  const x = bk.x, y = bk.y, w = bk.w, h = bk.h;
+
+  // Body (trapezoid)
+  X.fillStyle = '#b45309';
+  X.beginPath();
+  X.moveTo(x,         y);
+  X.lineTo(x + w,     y);
+  X.lineTo(x + w*.96, y + h);
+  X.lineTo(x + w*.04, y + h);
+  X.closePath(); X.fill();
+
+  // Wicker grid
+  X.strokeStyle = '#92400e'; X.lineWidth = 1.5;
+  for(let i = 1; i < 4; i++){
+    const gy = y + h * (i/4);
+    X.beginPath(); X.moveTo(x, gy); X.lineTo(x+w, gy); X.stroke();
+  }
+  for(let i = 1; i < 6; i++){
+    const gx = x + w*(i/6);
+    X.beginPath(); X.moveTo(gx, y); X.lineTo(gx + w*.02, y+h); X.stroke();
+  }
+
+  // Opening rim (golden) — collision zone
+  X.strokeStyle = '#fcd34d'; X.lineWidth = 4;
+  X.shadowColor = '#fcd34d'; X.shadowBlur = 8;
+  X.beginPath(); X.moveTo(x, y); X.lineTo(x+w, y); X.stroke();
+  X.shadowBlur = 0;
+
+  // Cloth inside top
+  X.fillStyle = 'rgba(254,215,170,.55)';
+  X.fillRect(x, y, w, h*.12);
+
+  // Handle arc
+  X.strokeStyle = '#92400e'; X.lineWidth = Math.max(3, w*.06);
+  X.beginPath(); X.arc(x+w/2, y - h*.15, w*.3, Math.PI, 0); X.stroke();
+
+  // Wind arrow indicator
+  if(cfg.wind > 0 && cfg.move){
+    const dir = bk.vx > 0 ? '→' : '←';
+    X.font = 'bold ' + Math.max(10, C.width * .02) + 'px "Bubblegum Sans",cursive';
+    X.fillStyle = 'rgba(255,255,255,.75)'; X.textAlign = 'center';
+    X.fillText('🌬️' + dir, x + w/2, y - h*.42);
+  }
+}
+
+/* ════════════════════════════════════════════
+   DRAW — PROJECTILE
+════════════════════════════════════════════ */
+function drawProjectile(){
+  // Trail
+  if(projState === PS.FLY && pr.trail.length > 1){
+    X.strokeStyle = 'rgba(255,220,80,.4)';
+    X.lineWidth   = 2.5; X.lineCap = 'round';
+    X.beginPath();
+    X.moveTo(pr.trail[0].x, pr.trail[0].y);
+    pr.trail.forEach(pt => X.lineTo(pt.x, pt.y));
+    X.stroke();
+  }
+
+  // Item sprite
+  const img = itemImgs[pr.imgIdx];
+  X.save();
+  X.translate(pr.x, pr.y);
+  X.rotate(pr.rot);
+  X.shadowColor = '#ffe066'; X.shadowBlur = 14;
+  if(img.ok){
+    X.drawImage(img, -pr.r, -pr.r, pr.r*2, pr.r*2);
+  } else {
+    X.fillStyle = '#fcd34d';
+    X.beginPath(); X.arc(0, 0, pr.r, 0, Math.PI*2); X.fill();
+  }
+  X.shadowBlur = 0;
+  X.restore();
+}
+
+/* ════════════════════════════════════════════
+   DRAW — AIM GUIDE (dotted trajectory)
+════════════════════════════════════════════ */
+function drawAimGuide(){
+  if(projState !== PS.DRAG) return;
+
+  const dx = sl.x - pr.x;
+  const dy = sl.y - pr.y;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  const mp   = maxPull();
+  const power = Math.min(dist, mp) / mp;
+  // launch velocity (mirrors onUp logic exactly)
+  const angle = Math.atan2(dy, dx);
+  const vx0   = Math.cos(angle) * power * LAUNCH_V;
+  const vy0   = Math.sin(angle) * power * LAUNCH_V;
+
+  X.fillStyle = 'rgba(255,230,80,.6)';
+  let px = pr.x, py = pr.y, pvx = vx0, pvy = vy0;
+  for(let i = 0; i < 50; i++){
+    pvx += cfg.wind * .1; // small wind hint
+    pvy += BASE_GRAV * cfg.grav;
+    px  += pvx;
+    py  += pvy;
+    if(i % 3 === 0){
+      const r = Math.max(.5, 4.5 - i * .08);
+      X.globalAlpha = 0.7 - i * .012;
+      X.beginPath(); X.arc(px, py, r, 0, Math.PI*2); X.fill();
+    }
+    if(py > C.height * .75) break;
+  }
+  X.globalAlpha = 1;
+
+  // pull strength bar
+  const barW = C.width * .12;
+  const barX = sl.x - barW / 2;
+  const barY = sl.y + C.height * .07;
+  X.fillStyle = 'rgba(0,0,0,.4)';
+  X.beginPath(); X.roundRect(barX, barY, barW, 8, 4); X.fill();
+  X.fillStyle = power > .7 ? '#ef4444' : power > .4 ? '#f97316' : '#22c55e';
+  X.beginPath(); X.roundRect(barX, barY, barW * power, 8, 4); X.fill();
+  X.font = Math.max(10, C.width*.018) + 'px "Bubblegum Sans",cursive';
+  X.fillStyle = '#fff'; X.textAlign = 'center';
+  X.fillText('Força: ' + Math.round(power*100) + '%', sl.x, barY + 22);
+}
+
+/* ════════════════════════════════════════════
+   DRAW — PLAYER CHARACTER
+════════════════════════════════════════════ */
+function drawPlayer(){
+  const W = C.width, H = C.height;
+  const px = sl.x - W * .11;
+  const py = H * .67;
+  const hr = Math.max(16, W * .038);
+
+  // shadow
+  X.fillStyle = 'rgba(0,0,0,.2)';
+  X.beginPath(); X.ellipse(px, py+2, hr*1.1, hr*.3, 0, 0, Math.PI*2); X.fill();
+
+  // body / dress
+  const dg = X.createLinearGradient(px-hr*.6, py-hr*2, px+hr*.6, py);
+  dg.addColorStop(0,'#f9a8d4'); dg.addColorStop(1,'#db2777');
+  X.fillStyle = dg;
+  X.beginPath();
+  X.moveTo(px-hr*.3, py-hr*1.8);
+  X.lineTo(px+hr*.3, py-hr*1.8);
+  X.lineTo(px+hr*.65, py);
+  X.lineTo(px-hr*.65, py);
+  X.closePath(); X.fill();
+
+  // arm pointing
+  X.strokeStyle = '#fca5a5'; X.lineWidth = Math.max(3, W*.006); X.lineCap = 'round';
+  X.beginPath();
+  X.moveTo(px+hr*.25, py-hr*1.5);
+  X.lineTo(sl.x - W*.04, sl.y + C.height*.02);
+  X.stroke();
+
+  // head
+  X.fillStyle = '#fde68a';
+  X.beginPath(); X.arc(px, py-hr*2.4, hr, 0, Math.PI*2); X.fill();
+  if(avancouImg.ok){
+    X.save();
+    X.beginPath(); X.arc(px, py-hr*2.4, hr, 0, Math.PI*2); X.clip();
+    X.drawImage(avancouImg, px-hr, py-hr*2.4-hr, hr*2, hr*2);
+    X.restore();
+  }
+
+  // bow
+  X.fillStyle = '#f0abfc';
+  X.beginPath(); X.ellipse(px+hr*.5, py-hr*3.2, 9, 6, Math.PI/5, 0, Math.PI*2); X.fill();
+  X.beginPath(); X.ellipse(px+hr*.5, py-hr*3.2, 9, 6, -Math.PI/5, 0, Math.PI*2); X.fill();
+  X.fillStyle = '#e879f9';
+  X.beginPath(); X.arc(px+hr*.5, py-hr*3.2, 4, 0, Math.PI*2); X.fill();
+}
+
+/* ════════════════════════════════════════════
+   DRAW — PARTICLES
+════════════════════════════════════════════ */
+function drawParticles(){
+  for(let i = parts.length-1; i >= 0; i--){
+    const p = parts[i];
+    p.x  += p.vx;
+    p.y  += p.vy;
+    p.vy += .35;
+    p.life -= .03;
+    if(p.life <= 0){ parts.splice(i,1); continue; }
+    X.globalAlpha = p.life;
+    X.fillStyle   = p.color;
+    X.beginPath(); X.arc(p.x, p.y, p.r, 0, Math.PI*2); X.fill();
+  }
+  X.globalAlpha = 1;
+}
+
+/* ════════════════════════════════════════════
+   BUBBLE PHOTO HELPER (same system as game1)
+════════════════════════════════════════════ */
+function drawCirclePhoto(canvasEl, img, borderColor, scale){
+  const c=canvasEl, x=c.getContext('2d');
+  const cx=c.width/2, cy=c.height/2, r=Math.min(cx,cy)-4;
+  x.clearRect(0,0,c.width,c.height);
+  if(scale<0.01) return;
+  x.save(); x.translate(cx,cy); x.scale(scale,scale);
+  x.save(); x.beginPath(); x.arc(0,0,r,0,Math.PI*2); x.clip();
+  if(img&&img.ok){ x.drawImage(img,-r,-r,r*2,r*2); }
+  else{
+    const fg=x.createRadialGradient(0,0,0,0,0,r);
+    fg.addColorStop(0,'#14532d'); fg.addColorStop(1,'#052e16');
+    x.fillStyle=fg; x.beginPath(); x.arc(0,0,r,0,Math.PI*2); x.fill();
+    x.fillStyle='#a7f3d0'; x.font='bold '+(r*.7)+'px serif';
+    x.textAlign='center'; x.textBaseline='middle'; x.fillText('🌟',0,0);
+  }
+  x.restore();
+  x.strokeStyle=borderColor||'#22c55e'; x.lineWidth=5;
+  x.shadowColor=borderColor||'#22c55e'; x.shadowBlur=22;
+  x.beginPath(); x.arc(0,0,r,0,Math.PI*2); x.stroke(); x.shadowBlur=0;
+  const sh=x.createRadialGradient(-r*.3,-r*.35,r*.02,-r*.15,-r*.2,r*.75);
+  sh.addColorStop(0,'rgba(255,255,255,.40)'); sh.addColorStop(1,'rgba(255,255,255,0)');
+  x.fillStyle=sh; x.beginPath(); x.arc(0,0,r,0,Math.PI*2); x.fill();
+  x.restore();
+}
+
+function animBubble(canvasEl, img, borderColor){
+  canvasEl._stop=false;
+  let t=0;
+  function frame(){
+    if(canvasEl._stop) return;
+    t++;
+    const POP=30;
+    let sc;
+    if(t<=POP){ const p=t/POP; sc=1-(1-p)*(1-p)*(1-p); }
+    else sc=1+Math.sin((t-POP)*.07)*.04;
+    drawCirclePhoto(canvasEl,img,borderColor,sc);
+    requestAnimationFrame(frame);
+  }
+  frame();
+}
+function stopBubble(el){ el._stop=true; }
+
+/* ════════════════════════════════════════════
+   HUD UPDATE
+════════════════════════════════════════════ */
+function updateHUD(){
+  document.getElementById('hud-phase').textContent = 'Fase '+(phase+1)+'/8';
+  document.getElementById('hud-hits').textContent  = '🎯 '+hitsGot+'/'+hitsNeeded;
+  document.getElementById('hud-tries').textContent =
+    '🍕'.repeat(Math.max(0,triesLeft)) + '⬛'.repeat(Math.max(0, cfg.tries-triesLeft));
+  const we = document.getElementById('hud-wind');
+  if(cfg.wind > 0){ we.style.display='block'; we.textContent='🌬️ '+Math.round(cfg.wind*100)+'%'; }
+  else we.style.display='none';
+}
+
+/* ════════════════════════════════════════════
    MAIN LOOP
-══════════════════════════ */
+════════════════════════════════════════════ */
+let animId = null;
 function loop(){
-  X.clearRect(0,0,C.width,C.height);
-  drawBg();
+  if(paused){ animId=requestAnimationFrame(loop); return; }
+  X.clearRect(0, 0, C.width, C.height);
+  drawBackground();
   drawSlingshot();
+  drawAimGuide();
   drawBasket();
   updateBasket();
-  drawAimGuide();
   drawProjectile();
-  drawPlayerChar();
+  drawPlayer();
   drawParticles();
-  updatePhysics();
-  requestAnimationFrame(loop);
+  physicsStep();
+  animId = requestAnimationFrame(loop);
 }
 
-/* ══════════════════════════
-   DRAG / TOUCH INPUT
-══════════════════════════ */
-const MAX_PULL=()=>C.width*.14;
-
-function getPos(e){
-  const r=C.getBoundingClientRect();
-  const t=e.touches?e.touches[0]:e;
-  return {x:t.clientX-r.left,y:t.clientY-r.top};
+/* ════════════════════════════════════════════
+   INPUT — drag to aim, release to fire
+════════════════════════════════════════════ */
+function getEventPos(e){
+  const rect = C.getBoundingClientRect();
+  const src  = e.touches ? e.touches[0] : e;
+  return { x: src.clientX - rect.left, y: src.clientY - rect.top };
 }
 
-function onDown(e){
-  if(gState!==ST.IDLE) return;
-  const pos=getPos(e);
-  const dx=pos.x-sling.x, dy=pos.y-sling.y;
-  if(Math.sqrt(dx*dx+dy*dy)<C.width*.15){
-    drag.active=true; gState=ST.DRAGGING;
+function onPointerDown(e){
+  if(!gameRunning || paused || projState !== PS.IDLE) return;
+  const pos = getEventPos(e);
+  // accept touch anywhere in the left 40% of the screen
+  if(pos.x < C.width * .40){
+    dragActive = true;
+    projState  = PS.DRAG;
+    pr.x = pos.x; pr.y = pos.y;
     document.getElementById('drag-hint').classList.add('hidden');
     e.preventDefault();
   }
 }
-function onMove(e){
-  if(!drag.active||gState!==ST.DRAGGING) return;
-  const pos=getPos(e);
-  const dx=pos.x-sling.x, dy=pos.y-sling.y;
-  const dist=Math.sqrt(dx*dx+dy*dy);
-  const clamp=Math.min(dist,MAX_PULL());
-  const angle=Math.atan2(dy,dx);
-  proj.x=sling.x+Math.cos(angle)*clamp;
-  proj.y=sling.y+Math.sin(angle)*clamp;
+
+function onPointerMove(e){
+  if(!dragActive || projState !== PS.DRAG) return;
+  const pos  = getEventPos(e);
+  const dx   = pos.x - sl.x;
+  const dy   = pos.y - sl.y;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  const mp   = maxPull();
+  // clamp pull distance
+  if(dist > 0){
+    const ratio = Math.min(dist, mp) / dist;
+    pr.x = sl.x + dx * ratio;
+    pr.y = sl.y + dy * ratio;
+  }
   e.preventDefault();
 }
-function onUp(e){
-  if(!drag.active||gState!==ST.DRAGGING) return;
-  drag.active=false;
-  const dx=sling.x-proj.x, dy=sling.y-proj.y;
-  const dist=Math.sqrt(dx*dx+dy*dy);
-  if(dist<C.width*.02){ resetProjectile(); return; } // too short — cancel
-  const angle=Math.atan2(dy,dx);
-  const power=dist/MAX_PULL();
-  proj.vx=Math.cos(angle)*power*22;
-  proj.vy=Math.sin(angle)*power*22;
-  proj.active=true;
-  gState=ST.FLYING;
-  e.preventDefault&&e.preventDefault();
+
+function onPointerUp(e){
+  if(!dragActive || projState !== PS.DRAG) return;
+  dragActive = false;
+
+  const dx   = sl.x - pr.x;   // vector FROM proj TO sling (launch direction)
+  const dy   = sl.y - pr.y;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+
+  if(dist < C.width * .015){
+    // tiny pull — cancel
+    resetProj(); return;
+  }
+
+  const mp    = maxPull();
+  const power = Math.min(dist, mp) / mp;
+  const angle = Math.atan2(dy, dx);
+
+  pr.vx = Math.cos(angle) * power * LAUNCH_V;
+  pr.vy = Math.sin(angle) * power * LAUNCH_V;
+  projState = PS.FLY;
+  e.preventDefault && e.preventDefault();
 }
 
-C.addEventListener('mousedown',onDown);
-C.addEventListener('mousemove',onMove);
-C.addEventListener('mouseup',onUp);
-C.addEventListener('touchstart',onDown,{passive:false});
-C.addEventListener('touchmove',onMove,{passive:false});
-C.addEventListener('touchend',onUp,{passive:false});
+C.addEventListener('mousedown',  onPointerDown);
+C.addEventListener('mousemove',  onPointerMove);
+C.addEventListener('mouseup',    onPointerUp);
+C.addEventListener('touchstart', onPointerDown, {passive:false});
+C.addEventListener('touchmove',  onPointerMove, {passive:false});
+C.addEventListener('touchend',   onPointerUp,   {passive:false});
 
-/* ══════════════════════════
-   PHASE FLOW
-══════════════════════════ */
-function showPhaseIntro(){
-  cfg=PHASES[phase];
-  document.getElementById('p-emoji').textContent=cfg.emoji;
-  document.getElementById('p-title').textContent='Fase '+(phase+1)+' de 8';
-  document.getElementById('p-sub').textContent=cfg.desc;
-  document.getElementById('p-info').textContent='Acerte '+cfg.hits+' itens • '+cfg.tries+' arremessos'+(cfg.wind>0?' • 🌬️ Vento':'')+(cfg.move?' • 🔀 Cesta se move':'');
-  ['screen-phase','screen-win-phase','screen-fail','screen-gameclear'].forEach(s=>document.getElementById(s).classList.remove('hidden'));
-  ['screen-win-phase','screen-fail','screen-gameclear'].forEach(s=>document.getElementById(s).classList.add('hidden'));
-  document.getElementById('hud').style.display='none';
-  document.getElementById('hud-wind').style.display='none';
+/* ════════════════════════════════════════════
+   PAUSE
+════════════════════════════════════════════ */
+function togglePause(){
+  if(!gameRunning) return;
+  paused = !paused;
+  document.getElementById('btn-pause').textContent = paused ? '▶' : '⏸';
+  document.getElementById('screen-pause').classList.toggle('hidden', !paused);
+}
+window.addEventListener('keydown', e => { if(e.key==='Escape'||e.key==='p'||e.key==='P') togglePause(); });
+
+/* ════════════════════════════════════════════
+   THROW MANAGEMENT
+════════════════════════════════════════════ */
+function nextThrow(){
+  triesLeft--;
+  updateHUD();
+  if(triesLeft <= 0){
+    showGameOver(); return;
+  }
+  resetProj();
+}
+
+/* ════════════════════════════════════════════
+   SCREEN MANAGEMENT
+════════════════════════════════════════════ */
+const ALL_SCREENS = ['screen-intro','screen-phwin','screen-gameover','screen-pause','screen-clear'];
+function hideAllScreens(){ ALL_SCREENS.forEach(id=>document.getElementById(id).classList.add('hidden')); }
+
+function showIntro(){
+  gameRunning = false;
+  paused = false;
+  cfg = PHASES[phase];
+  hideAllScreens();
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('hud-wind').style.display = 'none';
+  document.getElementById('btn-pause').style.display = 'none';
   document.getElementById('drag-hint').classList.remove('hidden');
+  document.getElementById('pi-emoji').textContent = cfg.emoji;
+  document.getElementById('pi-title').textContent = 'Fase '+(phase+1)+' de 8';
+  document.getElementById('pi-sub').textContent   = cfg.desc;
+  document.getElementById('pi-info').textContent  =
+    '🎯 Acerte '+cfg.hits+' • 🍕 '+cfg.tries+' arremessos' +
+    (cfg.wind>0 ? ' • 🌬️ Vento' : '') +
+    (cfg.move   ? ' • 🔀 Cesta se move' : '') +
+    (cfg.bouncy ? ' • ↕ Saltita' : '');
+  document.getElementById('screen-intro').classList.remove('hidden');
 }
 
 function startPhase(){
-  cfg=PHASES[phase];
-  hitsNeeded=cfg.hits; triesLeft=cfg.tries; hitsGot=0;
+  cfg = PHASES[phase];
+  hitsNeeded = cfg.hits; triesLeft = cfg.tries; hitsGot = 0;
   initScene();
-  document.getElementById('screen-phase').classList.add('hidden');
-  document.getElementById('hud').style.display='flex';
-  updateHudDisplay();
+  hideAllScreens();
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('btn-pause').style.display = 'block';
   document.getElementById('drag-hint').classList.remove('hidden');
+  updateHUD();
+  gameRunning = true;
+  paused      = false;
   document.getElementById('game-music').play().catch(()=>{});
 }
 
-function showWinPhase(){
-  document.getElementById('hud').style.display='none';
-  document.getElementById('wp-msg').textContent=phase<7?'Fase '+(phase+1)+' concluída! Prepare-se...':'Você é demais, Manu! 🌟';
-  ['screen-win-phase'].forEach(s=>document.getElementById(s).classList.remove('hidden'));
+function showPhaseWin(){
+  gameRunning = false;
+  document.getElementById('hud').style.display    = 'none';
+  document.getElementById('btn-pause').style.display = 'none';
+  document.getElementById('pw-msg').textContent =
+    phase < 7 ? 'Fase '+(phase+1)+' concluída! Próxima...' : 'Você é demais, Manu! 🌟';
+  stopBubble(document.getElementById('pw-bubble'));
+  animBubble(document.getElementById('pw-bubble'), avancouImg, '#4dffd2');
+  document.getElementById('screen-phwin').classList.remove('hidden');
 }
 
-function showFail(){
-  document.getElementById('hud').style.display='none';
-  document.getElementById('fail-msg').textContent='Acertou '+hitsGot+' de '+hitsNeeded+'. Tente de novo!';
-  document.getElementById('screen-fail').classList.remove('hidden');
+function showGameOver(){
+  gameRunning = false;
+  document.getElementById('hud').style.display    = 'none';
+  document.getElementById('btn-pause').style.display = 'none';
+  document.getElementById('go-msg').textContent =
+    'Acertou '+hitsGot+' de '+hitsNeeded+'. Tente novamente!';
+  stopBubble(document.getElementById('go-bubble'));
+  animBubble(document.getElementById('go-bubble'), gameoverImg, '#ff6b9d');
+  document.getElementById('screen-gameover').classList.remove('hidden');
 }
 
 function nextPhase(){
-  document.getElementById('screen-win-phase').classList.add('hidden');
   phase++;
-  if(phase>=PHASES.length){
-    document.getElementById('screen-gameclear').classList.remove('hidden');
+  if(phase >= PHASES.length){
+    hideAllScreens();
+    document.getElementById('screen-clear').classList.remove('hidden');
     return;
   }
-  showPhaseIntro();
+  showIntro();
 }
 
-function retryPhase(){
-  document.getElementById('screen-fail').classList.add('hidden');
-  showPhaseIntro();
-}
+function retryPhase(){ showIntro(); }
 
-function playAgain(){
-  phase=0;
-  document.getElementById('screen-gameclear').classList.add('hidden');
-  showPhaseIntro();
-}
+function playAgain(){ phase=0; showIntro(); }
 
-/* ══════════════════════════
+/* ════════════════════════════════════════════
    BUTTON WIRING
-══════════════════════════ */
-document.getElementById('btn-start-phase').addEventListener('click',startPhase);
-document.getElementById('btn-next-phase').addEventListener('click',nextPhase);
-document.getElementById('btn-retry').addEventListener('click',retryPhase);
-document.getElementById('btn-play-again').addEventListener('click',playAgain);
+════════════════════════════════════════════ */
+document.getElementById('btn-play').addEventListener('click', startPhase);
+document.getElementById('btn-next').addEventListener('click', nextPhase);
+document.getElementById('btn-retry').addEventListener('click', retryPhase);
+document.getElementById('btn-again').addEventListener('click', playAgain);
+document.getElementById('btn-restart-pause').addEventListener('click', ()=>{
+  paused=false;
+  document.getElementById('screen-pause').classList.add('hidden');
+  document.getElementById('btn-pause').textContent='⏸';
+  retryPhase();
+});
 
-/* ══════════════════════════
+/* ════════════════════════════════════════════
    BOOT
-══════════════════════════ */
-showPhaseIntro();
+════════════════════════════════════════════ */
+showIntro();
 loop();
 </script>
 </body>
