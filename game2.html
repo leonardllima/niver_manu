@@ -500,10 +500,28 @@ function evXY(e){
 }
 
 function onPointerDown(e){
-  // only accept input in IDLE state, left 45% of screen
+  // only accept input in IDLE state
   if(!gameRunning || paused || projState !== PS.IDLE) return;
   const p = evXY(e);
-  if(p.x > C.width * .45) return;    // right side rejected
+
+  // Right side (> 45% of screen) = quick auto-aim toward basket centre
+  if(p.x > C.width * .45){
+    const tx = BK.x + BK.w/2;
+    const ty = BK.y + BK.h*0.1;
+    const ang = Math.atan2(ty - SL.ay, tx - SL.ax);
+    const pull = MAX_PULL() * 0.72;
+    // position projectile as if pulled back
+    PR.x = SL.ax - Math.cos(ang) * pull;
+    PR.y = SL.ay - Math.sin(ang) * pull;
+    PR.vx = Math.cos(ang) * pull * LAUNCH_K;
+    PR.vy = Math.sin(ang) * pull * LAUNCH_K;
+    projState = PS.FLY;
+    document.getElementById('drag-hint-g2').classList.add('hidden');
+    e.preventDefault && e.preventDefault();
+    return;
+  }
+
+  // Left side = normal slingshot drag
   inputDown = true;
   rawX = p.x; rawY = p.y;
   projState = PS.DRAG;
@@ -1132,6 +1150,21 @@ function togglePause(){
 }
 window.addEventListener('keydown',e=>{
   if(e.key==='Escape'||e.key==='p'||e.key==='P') togglePause();
+  // Space / ArrowUp = quick auto-aim fire toward basket centre
+  if((e.code==='Space'||e.key==='ArrowUp'||e.key==='w'||e.key==='W')
+      && gameRunning && !paused && projState===PS.IDLE){
+    const tx = BK.x + BK.w/2;
+    const ty = BK.y + BK.h*0.1;
+    const ang = Math.atan2(ty - SL.ay, tx - SL.ax);
+    const pull = MAX_PULL() * 0.72;
+    PR.x = SL.ax - Math.cos(ang)*pull;
+    PR.y = SL.ay - Math.sin(ang)*pull;
+    PR.vx = Math.cos(ang)*pull*LAUNCH_K;
+    PR.vy = Math.sin(ang)*pull*LAUNCH_K;
+    projState = PS.FLY;
+    document.getElementById('drag-hint-g2').classList.add('hidden');
+    e.preventDefault();
+  }
 });
 
 /* ══════════════════════════════════════════
